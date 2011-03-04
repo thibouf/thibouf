@@ -1,4 +1,5 @@
 BubbleClass = {}
+bubbleId = 0
 
 function BubbleClass.new( x, y )
     local b = {}
@@ -7,7 +8,13 @@ function BubbleClass.new( x, y )
     local radius = 5
     b.body = love.physics.newBody(world, x, y + 50, mass, 0)
     b.shape = love.physics.newCircleShape(b.body, 0, 0, radius)
+    b.shape:setData( b )
+    b.name = "Bubble"
     b.color = { 193, 47, 14, 255 }  
+    b.bubble = true --todo change
+    b.id = bubbleId
+    bubbleId = bubbleId + 1
+    b.jointBubbles = {}
     return b
 end
 
@@ -15,6 +22,27 @@ function BubbleClass:Draw()
     love.graphics.setColor( self.color ) 
     love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.shape:getRadius(), 20)
 end
+
+function BubbleClass:Fire()
+      table.insert( objects, BubbleClass.new( self.body:getX() , self.body:getY() ) )
+end
+
+function BubbleClass:Join( withBubble, createJoin )
+    --Already joint
+    if self.jointBubbles[ withBubble.id ] then 
+        return 
+    end
+
+    if createJoin then
+        local joint = love.physics.newDistanceJoint( self.body, withBubble.body, self.body:getX() , self.body:getY(), withBubble.body:getX(), withBubble.body:getY() )
+        joint:setCollideConnected( false )
+        joint:setLength( self.shape:getRadius() * 2 + 1 )
+        withBubble:Join( self, false )
+    end
+    self.jointBubbles[ withBubble.id ] =  withBubble
+end
+
+
 ----------------------------------------------------------------------------------------------------
 WallClass = {}
 
@@ -25,7 +53,8 @@ function WallClass.new( x, y, width, height)
     w.height = height
     w.body = love.physics.newBody(world, x, y, 0, 0)
     w.shape = love.physics.newRectangleShape( w.body, 0, 0, width, height, 0 )
-    
+    w.shape:setData( w )
+    w.name = "Wall"
     return w
 end
 
@@ -34,9 +63,36 @@ function WallClass:Draw()
     love.graphics.rectangle("fill", self.body:getX() - self.width/2, self.body:getY() - self.height/2, self.width, self.height)
 end
 
+text = ""
+
+function add(a, b, coll)
+    --text = text..a.name.." collding with "..b.name.." at an angle of "..coll:getNormal().."\n"
+    if a.Join and b.Join then
+     text = text .. "Join"
+        a:Join( b, true )
+    end
+end
+
+function persist(a, b, coll)
+    text = text..a.name.." touching "..b.name.."\n"
+    --if a.Join and b.Join then
+    -- text = text .. "Join"
+    --    a:Join( b )
+    --end
+end
+
+function rem(a, b, coll)
+    text = text..a.name.." uncolliding "..b.name.."\n"
+end
+
+function result(a, b, coll)
+    text = text..a.name.." hit "..b.name.."resulting with "..coll:getNormal().."\n"
+end
+
 ----------------------------------------------------------------------------------------------------
 function love.load()
   world = love.physics.newWorld(-650, -650, 650, 650) --create a world for the bodies to exist in with width and height of 650
+  world:setCallbacks(add, persist, rem, result)
   world:setGravity(0, 0) --the x component of the gravity will be 0, and the y component of the gravity will be 700
   world:setMeter(64) --the height of a meter in this world will be 64px
  
@@ -52,10 +108,13 @@ function love.load()
   V = BubbleClass.new( 650/2, 650/2 + 50)
   V.color = { 255, 0, 0, 255 }  
   table.insert( objects, V )
-
-  for i=1,1000 do
-    table.insert( objects, BubbleClass.new( 50 + i * 2, 650/2 ) )
+  T = BubbleClass.new( 650/2, 650/2 + 100 )
+ table.insert( objects, T )
+ 
+  for i=1,50 do
+    table.insert( objects, BubbleClass.new( 50 + i * 11, 650/2 ) )
   end
+-- joint = love.physics.newDistanceJoint( V.body, T.body, 650/2, 650/2 + 50, 650/2, 650/2 + 100 )
   
   table.insert( objects, WallClass.new( 650/2, 625, 650, 50 ) )
   table.insert( objects, WallClass.new( 650/2, 25, 650, 50 ) )
@@ -69,6 +128,7 @@ end
 
 
 function love.update(dt)
+text = ""
   world:update(dt) --this puts the world into motion
   local F = 700
  
@@ -105,4 +165,6 @@ function love.draw()
   for _, o in pairs( objects ) do
     o:Draw()
   end 
+   love.graphics.setColor( 0,0,0,255 ) 
+  love.graphics.print(text,0,12)
 end
