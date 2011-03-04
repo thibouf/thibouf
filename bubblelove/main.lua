@@ -1,6 +1,6 @@
 BubbleClass = {}
 bubbleId = 0
-
+nbLink = 0
 function BubbleClass.new( x, y )
     local b = {}
     setmetatable(b, {__index=BubbleClass})
@@ -28,6 +28,10 @@ function BubbleClass:Fire()
 end
 
 function BubbleClass:Join( withBubble, createJoin )
+
+    if table.getn( self.jointBubbles ) > 6 then
+        return
+    end
     --Already joint
     if self.jointBubbles[ withBubble.id ] then 
         return 
@@ -36,8 +40,10 @@ function BubbleClass:Join( withBubble, createJoin )
     if createJoin then
         local joint = love.physics.newDistanceJoint( self.body, withBubble.body, self.body:getX() , self.body:getY(), withBubble.body:getX(), withBubble.body:getY() )
         joint:setCollideConnected( false )
-        joint:setLength( self.shape:getRadius() * 2 + 1 )
+        joint:setDamping( 0 )
+        joint:setLength( self.shape:getRadius() + withBubble.shape:getRadius() + 5 )
         withBubble:Join( self, false )
+        nbLink = nbLink + 1
     end
     self.jointBubbles[ withBubble.id ] =  withBubble
 end
@@ -112,7 +118,7 @@ function love.load()
  table.insert( objects, T )
  
   for i=1,50 do
-    table.insert( objects, BubbleClass.new( 50 + i * 11, 650/2 ) )
+    table.insert( objects, BubbleClass.new( 50 + i * 10, 650/2 ) )
   end
 -- joint = love.physics.newDistanceJoint( V.body, T.body, 650/2, 650/2 + 50, 650/2, 650/2 + 100 )
   
@@ -128,9 +134,9 @@ end
 
 
 function love.update(dt)
-text = ""
+text = nbLink .. ""
   world:update(dt) --this puts the world into motion
-  local F = 700
+  local F = 1000
  
   --here we are going to create some keyboard events
   if love.keyboard.isDown("right") then --press the right arrow key to push the ball to the right
@@ -148,20 +154,7 @@ text = ""
 end
 
 function love.draw()
- -- local x1, y1, x2, y2, x3, y3, x4, y4 = shapes[0]:getBoundingBox() --get the x,y coordinates of all 4 corners of the box.
-  --x1, y1 represent the bottom left corner of the bounding box
-  --x2, y2 represent the top left corner of the bounding box
-  --x3, y3 represent the top right corner of the bounding box
-  --x4, y4 represent the top right corner of the boudning box
- -- local boxwidth = x3 - x2 --calculate the width of the box
-  --local boxheight = y2 - y1 --calculate the height of the box
-  --love.graphics.setColor(72, 160, 14) --set the drawing color to green for the ground
-  --the rectangle is drawing from the top left corner
-  --so we need to compensate for that
-  --love.graphics.rectangle("fill", bodies[0]:getX() - boxwidth/2, bodies[0]:getY() - boxheight/2, boxwidth, boxheight)
-  --love.graphics.setColor(193, 47, 14) --set the drawing color to red for the ball
-  --the circle is drawing from the center
-  --so we do not need to compensate
+
   for _, o in pairs( objects ) do
     o:Draw()
   end 
