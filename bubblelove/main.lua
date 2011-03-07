@@ -9,6 +9,10 @@ BubbleColors =
     Blue = 
     {
         rgba  = { 0,0, 255, 255 },
+    },
+    Green = 
+    {
+        rgba  = { 0,255, 0, 255 },
     }
 }
 
@@ -19,8 +23,10 @@ function BubbleClass.new( x, y, color )
     setmetatable(b, {__index=BubbleClass})
     local mass = 50
     local radius = 5
-    b.body = love.physics.newBody(world, x, y + 50, mass, 0)
+    b.body = love.physics.newBody(world, x, y , mass, 0)
+    b.body:setLinearDamping( 0 ) 
     b.shape = love.physics.newCircleShape(b.body, 0, 0, radius)
+    b.shape:setRestitution( 1 )
     b.shape:setData( b )
     b.name = "Bubble"
     b.colorName = color   
@@ -48,9 +54,17 @@ function BubbleClass:Draw()
         end
    end
 end
-
+function Normalize( x, y )
+  s = 1 / math.sqrt( x * x + y * y);
+  return x*s, y*s;
+end
 function BubbleClass:Fire()
-    local b =   BubbleClass.new( self.body:getX() + 30 , self.body:getY() + 30, "Red" )
+    local x, y = self.body:getLinearVelocity( )
+    local x2, y2 = Normalize( x, y )
+    local b =   BubbleClass.new( self.body:getX() + x2 * self.shape:getRadius() * 2.5   , self.body:getY() +  y2 * self.shape:getRadius() * 2.5  , "Green" )
+   -- local b =   BubbleClass.new( self.body:getX()   , self.body:getY()   , "Green" )
+
+    b.body:setLinearVelocity( x * 10, y * 10)
     table.insert( objects,b )
 end
 
@@ -145,7 +159,7 @@ function love.load()
   T = BubbleClass.new( 650/2, 650/2 + 100 , "Blue" )
  table.insert( objects, T )
  
-  for i=1,50 do
+  for i=1,10 do
     table.insert( objects, BubbleClass.new( 50 + i * 10, 650/2, "Blue"  ))
   end
 -- joint = love.physics.newDistanceJoint( V.body, T.body, 650/2, 650/2 + 50, 650/2, 650/2 + 100 )
