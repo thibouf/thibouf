@@ -1,30 +1,57 @@
+DRAW_JOINTS = false
 BubbleClass = {}
+BubbleColors = 
+{
+    Red = 
+    {
+        rgba = { 255,0, 0, 255 },
+    },
+    Blue = 
+    {
+        rgba  = { 0,0, 255, 255 },
+    }
+}
+
 bubbleId = 0
 nbLink = 0
-function BubbleClass.new( x, y )
+function BubbleClass.new( x, y, color )
     local b = {}
     setmetatable(b, {__index=BubbleClass})
-    local mass = 15
+    local mass = 50
     local radius = 5
     b.body = love.physics.newBody(world, x, y + 50, mass, 0)
     b.shape = love.physics.newCircleShape(b.body, 0, 0, radius)
     b.shape:setData( b )
     b.name = "Bubble"
-    b.color = { 193, 47, 14, 255 }  
+    b.colorName = color   
+    text = text .. color
+    b.color = BubbleColors[ color ]
+
     b.bubble = true --todo change
     b.id = bubbleId
     bubbleId = bubbleId + 1
     b.jointBubbles = {}
+    b.joints = {}
     return b
 end
 
 function BubbleClass:Draw()
-    love.graphics.setColor( self.color ) 
+--text = text .. self.color
+
+    love.graphics.setColor( self.color.rgba ) 
     love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.shape:getRadius(), 20)
+    if DRAW_JOINTS and self.joints then  
+        for _, j in pairs( self.joints ) do
+           love.graphics.setColor(0, 0, 0)
+           x1, y1, x2, y2 = j:getAnchors()
+           love.graphics.line( x1, y1, x2, y2 )
+        end
+   end
 end
 
 function BubbleClass:Fire()
-      table.insert( objects, BubbleClass.new( self.body:getX() , self.body:getY() ) )
+    local b =   BubbleClass.new( self.body:getX() + 30 , self.body:getY() + 30, "Red" )
+    table.insert( objects,b )
 end
 
 function BubbleClass:Join( withBubble, createJoin )
@@ -41,8 +68,9 @@ function BubbleClass:Join( withBubble, createJoin )
         local joint = love.physics.newDistanceJoint( self.body, withBubble.body, self.body:getX() , self.body:getY(), withBubble.body:getX(), withBubble.body:getY() )
         joint:setCollideConnected( false )
         joint:setDamping( 0 )
-        joint:setLength( self.shape:getRadius() + withBubble.shape:getRadius() + 5 )
+        joint:setLength( self.shape:getRadius() + withBubble.shape:getRadius()  )
         withBubble:Join( self, false )
+        self.joints[ withBubble.id ] = joint
         nbLink = nbLink + 1
     end
     self.jointBubbles[ withBubble.id ] =  withBubble
@@ -67,6 +95,7 @@ end
 function WallClass:Draw()
     love.graphics.setColor(72, 160, 14)
     love.graphics.rectangle("fill", self.body:getX() - self.width/2, self.body:getY() - self.height/2, self.width, self.height)
+
 end
 
 text = ""
@@ -111,14 +140,13 @@ function love.load()
   --bodies[0] = love.physics.newBody(world, 650/2, 625, 0, 0) --remember, the body anchors from the center of the shape
   --shapes[0] = love.physics.newRectangleShape(bodies[0], 0, 0, 650, 50, 0) --anchor the shape to the body, and make it a width of 650 and a height of 50
  
-  V = BubbleClass.new( 650/2, 650/2 + 50)
-  V.color = { 255, 0, 0, 255 }  
+  V = BubbleClass.new( 650/2, 650/2 + 50 , "Red" )
   table.insert( objects, V )
-  T = BubbleClass.new( 650/2, 650/2 + 100 )
+  T = BubbleClass.new( 650/2, 650/2 + 100 , "Blue" )
  table.insert( objects, T )
  
   for i=1,50 do
-    table.insert( objects, BubbleClass.new( 50 + i * 10, 650/2 ) )
+    table.insert( objects, BubbleClass.new( 50 + i * 10, 650/2, "Blue"  ))
   end
 -- joint = love.physics.newDistanceJoint( V.body, T.body, 650/2, 650/2 + 50, 650/2, 650/2 + 100 )
   
@@ -151,6 +179,13 @@ text = nbLink .. ""
   if love.keyboard.isDown("down") then 
      V.body:applyForce( 0, F)
   end
+    
+end
+
+function love.keyreleased( key, unicode )
+   if key == " " then
+      V:Fire()
+   end
 end
 
 function love.draw()
