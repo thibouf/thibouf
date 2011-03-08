@@ -1,1 +1,1 @@
-"C:\Program Files\LOVE\love.exe" bubblelove
+"C:\Program Files\LOVE\love.exe" bubblelove --console
