@@ -1,0 +1,3 @@
+- Physic collision bizarre
+- Particle
+- Bug with only one bubble colliding
