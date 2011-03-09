@@ -1,6 +1,14 @@
+require( "YaciCode" )
+
+DRAW_JOINTS = false
+
 bubbleId = 0
 nbLink = 0
-local BubbleColors = 
+
+
+BubbleClass = newclass("BubbleClass")
+
+BubbleClass.BubbleColors = 
 {
     Red = 
     {
@@ -13,36 +21,56 @@ local BubbleColors =
     Green = 
     {
         rgba  = { 0,255, 0, 255 },
-    }
+    },
+    White = 
+    {
+        rgba  = { 255,255, 255, 255 },
+    },
 }
 
-BubbleClass = {}
 
-function BubbleClass.new( x, y, color )
-    local b = {}
-    setmetatable(b, {__index=BubbleClass})
-    local mass = 50
-    local radius = 5
-    b.body = love.physics.newBody(world, x, y , mass, 0)
-    b.body:setLinearDamping( 0.2 ) 
-    b.shape = love.physics.newCircleShape(b.body, 0, 0, radius)
-    b.shape:setRestitution( 1 )
-    b.shape:setData( b )
-    b.name = "Bubble"
-    b:SetColor( color )
+BubbleClass.Radius = 10
+BubbleClass.Mass = 50
 
-    b.bubble = true --todo change
-    b.id = bubbleId
+function BubbleClass:init( x, y, color )
+    self.id = bubbleId
     bubbleId = bubbleId + 1
-    b.jointBubbles = {}
-    b.joints = {}
-    b.destroyed = false
+    self.body = love.physics.newBody( world, x, y , self.Mass, 0 )
+    self.body:setAngularVelocity( 0 )
+    --self.body:setLinearDamping( 0.2 ) 
+    self:CreateShape() 
+    self.name = "Bubble"
+
+    self.bubble = true --todo change
+
+    self.jointBubbles = {}
+    self.joints = {}
+    self.destroyed = false
+    self:SetColor( color )
+
     return b
+end
+
+function BubbleClass:CreateShape( ) 
+    self.shape = love.physics.newCircleShape(self.body, 0, 0, self.Radius )
+    self.shape:setRestitution( 1 )
+    self.shape:setData( self )
 end
 
 function BubbleClass:SetColor( color )
     self.colorName = color   
-    self.color = BubbleColors[ color ]
+    self.color = self.BubbleColors[ color ]
+    self:StartCheckDestroy()
+end
+
+function BubbleClass:NextColor( )
+    local k, c = next( self.BubbleColors, self.colorName )
+    if k == nil then
+        k, c = next( self.BubbleColors )
+    end
+    self.colorName = k   
+    self.color = c
+    self:StartCheckDestroy()
 end
 
 function BubbleClass:Draw()
@@ -52,7 +80,8 @@ function BubbleClass:Draw()
     end
     
     love.graphics.setColor( self.color.rgba ) 
-    love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.shape:getRadius(), 20)
+    love.graphics.setLineStipple( 0xFFFF, 1 )
+    love.graphics.circle("line", self.body:getX(), self.body:getY(), self.shape:getRadius(), 20)
     if DRAW_JOINTS and self.joints then  
         for _, j in pairs( self.joints ) do
            love.graphics.setColor(0, 0, 0)
@@ -62,23 +91,8 @@ function BubbleClass:Draw()
    end
 end
 
-
-function BubbleClass:Fire()
-    local sx, sy = self.body:getLinearVelocity( )
-
-     local mx, my = love.mouse.getPosition( )
-     local x = mx - self.body:getX()
-    local y = my - self.body:getY()
-         
-    local x2, y2 = Normalize( x, y )
-    local b =   BubbleClass.new( self.body:getX() + x2 * self.shape:getRadius() * 2.5   , self.body:getY() +  y2 * self.shape:getRadius() * 2.5  , self.colorName )
-   -- local b =   BubbleClass.new( self.body:getX()   , self.body:getY()   , "Green" )
-    local speed = 400
-    b.body:setLinearVelocity( sx + x2 * speed, sy + y2 * speed)
-    table.insert( objects,b )
-end
-
 function BubbleClass:CheckDestroy( currentNbSame, doDestroy )
+
     if alreadyChecked[ self.id ] then
         return currentNbSame
     end
@@ -97,6 +111,7 @@ function BubbleClass:CheckDestroy( currentNbSame, doDestroy )
     
     return currentNbSame + 1
 end
+BubbleClass:virtual( "CheckDestroy" )
 
 function BubbleClass:DestroyAllJoints()
     for _, j in pairs( self.joints ) do
@@ -117,6 +132,8 @@ function BubbleClass:StartCheckDestroy()
             self:CheckDestroy( 1 , true )
     end
 end
+BubbleClass:virtual( "StartCheckDestroy" )
+
 
 function BubbleClass:Join( withBubble, createJoin )
     if self.destroyed then
@@ -135,7 +152,7 @@ function BubbleClass:Join( withBubble, createJoin )
         local joint = love.physics.newDistanceJoint( self.body, withBubble.body, self.body:getX() , self.body:getY(), withBubble.body:getX(), withBubble.body:getY() )
         joint:setCollideConnected( false )
         joint:setDamping( 0 )
-        joint:setLength( self.shape:getRadius() + withBubble.shape:getRadius()  )
+        joint:setLength( self.shape:getRadius() + withBubble.shape:getRadius() + 1  )
         withBubble:Join( self, false )
         self.joints[ withBubble.id ] = joint
         nbLink = nbLink + 1
@@ -144,7 +161,9 @@ function BubbleClass:Join( withBubble, createJoin )
     self:StartCheckDestroy()
 end
 
-function BubbleClass:removeLinkWith( bubbleId )
+
+
+function BubbleClass:RemoveLinkWith( bubbleId )
     if self.joints[ bubbleId ] then
         self.joints[ bubbleId ]:destroy()
         self.joints[ bubbleId ] = nil
@@ -155,16 +174,20 @@ function BubbleClass:removeLinkWith( bubbleId )
     end
 end
 
+function BubbleClass:RemoveAllLinks(  )
+    for _, b in pairs( self.jointBubbles ) do
+        b:RemoveLinkWith( self.id )
+        self:RemoveLinkWith( b.id )
+    end
+end
+
 function BubbleClass:Destroy()
     self.destroyed = true
     self.shape:setMask(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16)
 
-    for _, b in pairs( self.jointBubbles ) do
-        b:removeLinkWith( self.id )
-        self:removeLinkWith( b.id )
-    end
-
+    self:RemoveAllLinks()
 end
+BubbleClass:virtual( "Destroy" )
 
 function BubbleClass:RealDestroy()
     if self.destroyed then

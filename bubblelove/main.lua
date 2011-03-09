@@ -1,27 +1,11 @@
 require( "BubbleClass" )
 require( "Wall" )
-
-
-DRAW_JOINTS = false
-
--- MATH ; todo separate -----------------
-function Normalize( x, y )
-  s = 1 / math.sqrt( x * x + y * y)
-  return x*s, y*s;
-end
-
-function Rad2Vect( r )
-    return math.cos( r ), math.sin( r )
-end
-
-function VectToRad( x, y )
-    return math.atan( x, y )
-end
-------------------------------------------
-
+require( "Vessel" )
+require( "Math" )
 
 text = ""
-
+----------------------------------------------------------------------------------------------------
+-- Physic callbacks
 function add(a, b, coll)
     --text = text..a.name.." collding with "..b.name.." at an angle of "..coll:getNormal().."\n"
     if a.Join and b.Join then
@@ -56,21 +40,22 @@ function love.load()
   bodies = {} --create tables for the bodies and shapes so that the garbage collector doesn't delete them
   shapes = {}
   objects = {}
-    
+   
   --let's create the ground
   --we need to give the ground a mass of zero so that the ground wont move
   --bodies[0] = love.physics.newBody(world, 650/2, 625, 0, 0) --remember, the body anchors from the center of the shape
   --shapes[0] = love.physics.newRectangleShape(bodies[0], 0, 0, 650, 50, 0) --anchor the shape to the body, and make it a width of 650 and a height of 50
  
-  V = BubbleClass.new( 650/2, 650/2 + 50 , "Red" )
+  V = Vessel:new( 650/2, 650/2 + 50 , "Red" )
   table.insert( objects, V )
-  V.body:setMass( 50/2, 650/2 + 50, 400, 0 )
+  V.protected = true
   
-  T = BubbleClass.new( 650/2, 650/2 + 100 , "Blue" )
+  T = BubbleClass:new( 650/2, 650/2 + 100 , "White" )
+   T.body:setMass( 50/2, 650/2 + 50, 0, 0 )
  table.insert( objects, T )
  
   for i=1,10 do
-    table.insert( objects, BubbleClass.new( 50 + i * 10, 650/2, "Blue"  ))
+    table.insert( objects, BubbleClass:new( 50 + i * 10, 650/2, "Blue"  ))
   end
 -- joint = love.physics.newDistanceJoint( V.body, T.body, 650/2, 650/2 + 50, 650/2, 650/2 + 100 )
   
@@ -122,9 +107,12 @@ end
 
 function love.mousepressed( x, y, button )
    if button == "l" then
-      V:Fire()
+        V:Fire()
+   elseif button == "r" then
+        V:Fire2()
+   
     elseif button == "wd" then
-        V:SetColor( "Blue" )
+        V:NextColor( )
     elseif button == "wu" then
         V:SetColor( "Red" )
    end
@@ -145,8 +133,6 @@ function love.draw()
    love.graphics.setColor( 0,0,0,255 ) 
   love.graphics.print(text,0,12)
   
-  local x, y = love.mouse.getPosition( )
-  love.graphics.setLineStipple( 0x0F0F, 1 )
-  love.graphics.line( V.body:getX(),V.body:getY(), x, y )
+ 
   
 end
