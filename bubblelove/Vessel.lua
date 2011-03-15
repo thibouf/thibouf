@@ -18,11 +18,13 @@ function Vessel:Fire()
     local y = my - self.body:getY()
          
     local x2, y2 = Normalize( x, y )
-    local b =   BubbleClass:new( self.body:getX() + x2 * self.shape:getRadius() * 2.5   , self.body:getY() +  y2 * self.shape:getRadius() * 2.5  , self.colorName )
+    local b =   BubbleClass:new( self.body:getX() + x2 * self.shape:getRadius() * 2   , self.body:getY() +  y2 * self.shape:getRadius() * 2  , self.colorName )
    -- local b =   BubbleClass.new( self.body:getX()   , self.body:getY()   , "Green" )
-    local speed = 400
-    b.body:setLinearVelocity( sx + x2 * speed, sy + y2 * speed)
+    local speed = 600
+   -- b.body:setLinearVelocity( sx + x2 * speed, sy + y2 * speed)
+    b.body:setLinearVelocity(  x2 * speed,  y2 * speed)
     table.insert( objects,b )
+    --b.shape:setSensor( true )
 end
 
 function Vessel:Fire2()
@@ -31,10 +33,8 @@ end
 
 function Vessel:Draw()
     self.super:Draw( )
-    love.graphics.setColor( 0,0,0,255 ) 
-   -- love.graphics.circle( "fill", self.body:getX(), self.body:getY(), self.shape:getRadius() - 1, 20 )
-    
-    love.graphics.setColor( 0,0,0,255 ) 
+
+    love.graphics.setColor( 0,100,0,255 ) 
     local x, y = love.mouse.getPosition( )
     local xn, yn = Normalize( x - V.body:getX(), y - V.body:getY() )
     local x1 = V.body:getX() + xn *  self.shape:getRadius()

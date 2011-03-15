@@ -22,7 +22,20 @@ BubbleClass.BubbleColors =
     {
         rgba  = { 0,255, 0, 255 },
     },
-    White = 
+
+    Yellow = 
+    {
+        rgba  = { 255,255, 0, 255 },
+    },
+    Purple = 
+    {
+        rgba  = { 255,0, 255, 255 },
+    },
+    Cyan = 
+    {
+        rgba  = { 0,255, 255, 255 },
+    },
+    Special = 
     {
         rgba  = { 255,255, 255, 255 },
     },
@@ -37,7 +50,8 @@ function BubbleClass:init( x, y, color )
     bubbleId = bubbleId + 1
     self.body = love.physics.newBody( world, x, y , self.Mass, 0 )
     self.body:setAngularVelocity( 0 )
-    --self.body:setLinearDamping( 0.2 ) 
+    self.body:setLinearDamping( 0.2 ) 
+
     self:CreateShape() 
     self.name = "Bubble"
 
@@ -47,14 +61,26 @@ function BubbleClass:init( x, y, color )
     self.joints = {}
     self.destroyed = false
     self:SetColor( color )
-
+    self.spawnTime = love.timer.getMicroTime( )
+    self.ready = false
+    self.collideSomething = false
+    self.frameWithoutColliding = 0
+ 
     return b
 end
 
 function BubbleClass:CreateShape( ) 
     self.shape = love.physics.newCircleShape(self.body, 0, 0, self.Radius )
+    self.shape:setSensor( true )
     self.shape:setRestitution( 1 )
     self.shape:setData( self )
+    self.shape:setFriction( 0 )
+    --world:update(0)
+    self.shape:setMask(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16)
+    world:update(0)
+    self.shape:setMask()
+   -- shapes[1]:setRestitution( 1 )
+
 end
 
 function BubbleClass:SetColor( color )
@@ -70,7 +96,11 @@ function BubbleClass:NextColor( )
     end
     self.colorName = k   
     self.color = c
-    self:StartCheckDestroy()
+    if k == "Special" then
+        self:NextColor( )
+    else
+        self:StartCheckDestroy()
+    end
 end
 
 function BubbleClass:Draw()
@@ -78,10 +108,29 @@ function BubbleClass:Draw()
     if self.destroyed then
         return
     end
+    if not self.ready then
+        if self.frameWithoutColliding > 2 then
+            self.ready = true
+            self.shape:setSensor( false )
+        else
+            if self.collideSomething then
+                self:Destroy() 
+            else
+                self.frameWithoutColliding  = self.frameWithoutColliding + 1 
+            end
+        end
+        return
+    end
     
     love.graphics.setColor( self.color.rgba ) 
     love.graphics.setLineStipple( 0xFFFF, 1 )
     love.graphics.circle("line", self.body:getX(), self.body:getY(), self.shape:getRadius(), 20)
+    love.graphics.setColor( self.color.rgba[1],self.color.rgba[2],self.color.rgba[3], 50) 
+   
+    love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.shape:getRadius(), 20)
+    if self.body:getMass() == 0 then
+        love.graphics.circle("line", self.body:getX(), self.body:getY(), self.shape:getRadius() -2, 5)
+    end
     if DRAW_JOINTS and self.joints then  
         for _, j in pairs( self.joints ) do
            love.graphics.setColor(0, 0, 0)
@@ -135,14 +184,33 @@ end
 BubbleClass:virtual( "StartCheckDestroy" )
 
 
+function BubbleClass:NotifyCollide( withBubble )
+    self.collideSomething = true
+    -- local dt = love.timer.getMicroTime() - self.spawnTime
+
+    -- if not self.ready then
+        -- if  dt > 0.01 then
+            -- self.ready = true
+        -- else 
+            -- self:Destroy()
+            -- return
+        -- end
+    -- end
+end
+
 function BubbleClass:Join( withBubble, createJoin )
-    if self.destroyed then
+    if self.destroyed or withBubble.destroyed then
         return
     end
-    
+
+    if not self.ready or not withBubble.ready then
+        return
+    end
+   
     if table.getn( self.jointBubbles ) > 6 then
         return
     end
+    
     --Already joint
     if self.jointBubbles[ withBubble.id ] then 
         return 
@@ -160,7 +228,6 @@ function BubbleClass:Join( withBubble, createJoin )
     self.jointBubbles[ withBubble.id ] =  withBubble
     self:StartCheckDestroy()
 end
-
 
 
 function BubbleClass:RemoveLinkWith( bubbleId )
@@ -191,8 +258,8 @@ BubbleClass:virtual( "Destroy" )
 
 function BubbleClass:RealDestroy()
     if self.destroyed then
-        --self.shape:destroy()
-        --self.body:destroy()
+        -- self.shape:destroy()
+        -- self.body:destroy()
     end
 end
 ----------------------------------------------------------------------------------------------------

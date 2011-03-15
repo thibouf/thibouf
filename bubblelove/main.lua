@@ -8,6 +8,14 @@ text = ""
 -- Physic callbacks
 function add(a, b, coll)
     --text = text..a.name.." collding with "..b.name.." at an angle of "..coll:getNormal().."\n"
+    
+    if a.NotifyCollide then
+        a:NotifyCollide( b )
+    end
+    if b.NotifyCollide then
+        b:NotifyCollide( a )
+    end
+    
     if a.Join and b.Join then
      text = text .. "Join"
         a:Join( b, true )
@@ -34,7 +42,7 @@ end
 function love.load()
   world = love.physics.newWorld(-650, -650, 650, 650) --create a world for the bodies to exist in with width and height of 650
   world:setCallbacks(add, persist, rem, result)
-  world:setGravity(0, 0) --the x component of the gravity will be 0, and the y component of the gravity will be 700
+  world:setGravity(0, 50) --the x component of the gravity will be 0, and the y component of the gravity will be 700
   world:setMeter(64) --the height of a meter in this world will be 64px
  
   bodies = {} --create tables for the bodies and shapes so that the garbage collector doesn't delete them
@@ -50,14 +58,14 @@ function love.load()
   table.insert( objects, V )
   V.protected = true
   
-  T = BubbleClass:new( 650/2, 650/2 + 100 , "White" )
+  T = BubbleClass:new( 650/2,  100 , "Special" )
    T.body:setMass( 50/2, 650/2 + 50, 0, 0 )
  table.insert( objects, T )
  
-  for i=1,10 do
-    table.insert( objects, BubbleClass:new( 50 + i * 10, 650/2, "Blue"  ))
+  for i=1,3 do
+    table.insert( objects, BubbleClass:new( 10 + i * 30, 400, "Blue"  ))
   end
--- joint = love.physics.newDistanceJoint( V.body, T.body, 650/2, 650/2 + 50, 650/2, 650/2 + 100 )
+    --joint = love.physics.newDistanceJoint( V.body, T.body, 650/2, 650/2 + 50, 650/2, 650/2 + 100 )
   
   table.insert( objects, WallClass.new( 650/2, 625, 650, 50 ) )
   table.insert( objects, WallClass.new( 650/2, 25, 650, 50 ) )
@@ -65,19 +73,24 @@ function love.load()
     table.insert( objects, WallClass.new( 25 , 650/2, 50, 650 ) )
     table.insert( objects, WallClass.new( 625 , 650/2, 50, 650 ) )
   --initial graphics setup
-  love.graphics.setBackgroundColor(104, 136, 248) --set the background color to a nice blue
+  love.graphics.setBackgroundColor(0, 0, 0) --set the background color to a nice blue
   love.graphics.setMode(650, 650, false, true, 0) --set the window dimensions to 650 by 650
 end
 
 
 function love.update(dt)
-text = love.timer.getFPS() .. " - "
- for k, o in pairs( objects ) do
-        if o.RealDestroy then
-            o:RealDestroy()
-           -- objects[o] = nil
-        end
-  end    
+    text = love.timer.getFPS() .. " - "
+    -- local toRemove = {}
+    -- for k, o in pairs( objects ) do
+        -- if o.destroyed and o.RealDestroy then
+            -- o:RealDestroy()
+            -- table.insert( toRemove, k ) 
+        -- end
+  -- end    
+   -- for k, toRemoveKey in pairs( toRemove ) do
+   --     objects[toRemoveKey] = nil
+   -- end
+    
   world:update(dt) --this puts the world into motion
   local F = 1000
  
@@ -96,10 +109,12 @@ text = love.timer.getFPS() .. " - "
   end
     
     for k, o in pairs( objects ) do
-        o:Draw()
-        if o.RealDestroy then
-            o:RealDestroy()
-           -- objects[o] = nil
+        
+        if o.RealDestroy and o.destroyed then
+            --o:RealDestroy()
+            objects[k] = nil
+        else
+            o:Draw()
         end
   end       
     
