@@ -79,6 +79,7 @@ function BubbleClass:CreateShape( )
     self.shape:setMask(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16)
     world:update(0)
     self.shape:setMask()
+    -- world:update(0)
    -- shapes[1]:setRestitution( 1 )
 
 end
@@ -103,22 +104,27 @@ function BubbleClass:NextColor( )
     end
 end
 
-function BubbleClass:Draw()
---text = text .. self.color
-    if self.destroyed then
-        return
-    end
+function BubbleClass:Update(dt)
     if not self.ready then
-        if self.frameWithoutColliding > 2 then
-            self.ready = true
-            self.shape:setSensor( false )
+        if self.collideSomething then
+            self:Destroy() 
         else
-            if self.collideSomething then
-                self:Destroy() 
+            if self.frameWithoutColliding == 0 then
+                 self.shape:setSensor( false )
+                  self.frameWithoutColliding  = self.frameWithoutColliding + 1 
+            elseif self.frameWithoutColliding >= 1 then
+                self.ready = true
             else
-                self.frameWithoutColliding  = self.frameWithoutColliding + 1 
+               self.frameWithoutColliding  = self.frameWithoutColliding + 1 
             end
         end
+    end
+
+end
+
+function BubbleClass:Draw()
+--text = text .. self.color
+    if self.destroyed or not self.ready then
         return
     end
     
@@ -186,16 +192,6 @@ BubbleClass:virtual( "StartCheckDestroy" )
 
 function BubbleClass:NotifyCollide( withBubble )
     self.collideSomething = true
-    -- local dt = love.timer.getMicroTime() - self.spawnTime
-
-    -- if not self.ready then
-        -- if  dt > 0.01 then
-            -- self.ready = true
-        -- else 
-            -- self:Destroy()
-            -- return
-        -- end
-    -- end
 end
 
 function BubbleClass:Join( withBubble, createJoin )

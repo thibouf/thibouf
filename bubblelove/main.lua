@@ -1,6 +1,7 @@
 require( "BubbleClass" )
 require( "Wall" )
 require( "Vessel" )
+require( "Towel" )
 require( "Math" )
 
 text = ""
@@ -40,33 +41,33 @@ end
 
 ----------------------------------------------------------------------------------------------------
 function love.load()
-  world = love.physics.newWorld(-650, -650, 650, 650) --create a world for the bodies to exist in with width and height of 650
-  world:setCallbacks(add, persist, rem, result)
-  world:setGravity(0, 50) --the x component of the gravity will be 0, and the y component of the gravity will be 700
-  world:setMeter(64) --the height of a meter in this world will be 64px
- 
-  bodies = {} --create tables for the bodies and shapes so that the garbage collector doesn't delete them
-  shapes = {}
-  objects = {}
-   
-  --let's create the ground
-  --we need to give the ground a mass of zero so that the ground wont move
-  --bodies[0] = love.physics.newBody(world, 650/2, 625, 0, 0) --remember, the body anchors from the center of the shape
-  --shapes[0] = love.physics.newRectangleShape(bodies[0], 0, 0, 650, 50, 0) --anchor the shape to the body, and make it a width of 650 and a height of 50
- 
-  V = Vessel:new( 650/2, 650/2 + 50 , "Red" )
-  table.insert( objects, V )
-  V.protected = true
+    world = love.physics.newWorld(-650, -650, 650, 650) --create a world for the bodies to exist in with width and height of 650
+    world:setCallbacks(add, persist, rem, result)
+    world:setGravity(0, 50) --the x component of the gravity will be 0, and the y component of the gravity will be 700
+    world:setMeter(64) --the height of a meter in this world will be 64px
+
+    objects = {}
+
+
+    V = Vessel:new( 650/2, 650/2 + 50 , "Red" )
+    table.insert( objects, V )
+    V.protected = true
   
-  T = BubbleClass:new( 650/2,  100 , "Special" )
-   T.body:setMass( 50/2, 650/2 + 50, 0, 0 )
- table.insert( objects, T )
+    J = BubbleClass:new( 650/2,  100 , "Special" )
+    J.body:setMass( 50/2, 650/2 + 50, 0, 0 )
+    table.insert( objects, J )
  
-  for i=1,3 do
-    table.insert( objects, BubbleClass:new( 10 + i * 30, 400, "Blue"  ))
-  end
-    --joint = love.physics.newDistanceJoint( V.body, T.body, 650/2, 650/2 + 50, 650/2, 650/2 + 100 )
+   T = Towel:new(  70,  300 , J )
+    table.insert( objects, T )
   
+    T2 = Towel:new(  650-70,  300 , J )
+    table.insert( objects, T2 )
+ 
+ 
+  -- for i=1,3 do
+    -- table.insert( objects, BubbleClass:new( 10 + i * 30, 400, "Blue"  ))
+  -- end
+
   table.insert( objects, WallClass.new( 650/2, 625, 650, 50 ) )
   table.insert( objects, WallClass.new( 650/2, 25, 650, 50 ) )
    
@@ -80,32 +81,22 @@ end
 
 function love.update(dt)
     text = love.timer.getFPS() .. " - "
-    -- local toRemove = {}
-    -- for k, o in pairs( objects ) do
-        -- if o.destroyed and o.RealDestroy then
-            -- o:RealDestroy()
-            -- table.insert( toRemove, k ) 
-        -- end
-  -- end    
-   -- for k, toRemoveKey in pairs( toRemove ) do
-   --     objects[toRemoveKey] = nil
-   -- end
-    
+  
   world:update(dt) --this puts the world into motion
   local F = 1000
- 
+    V:ResetEngineForce()
   --here we are going to create some keyboard events
   if love.keyboard.isDown("right") then --press the right arrow key to push the ball to the right
-    V.body:applyForce(F, 0)
+    V:AddEngineForce(F, 0)
   end
   if love.keyboard.isDown("left") then --press the left arrow key to push the ball to the left
-    V.body:applyForce(-F, 0)
+    V:AddEngineForce(-F, 0)
   end
   if love.keyboard.isDown("up") then 
-     V.body:applyForce( 0, -F)
+     V:AddEngineForce( 0, -F)
   end
   if love.keyboard.isDown("down") then 
-     V.body:applyForce( 0, F)
+     V:AddEngineForce( 0, F)
   end
     
     for k, o in pairs( objects ) do
@@ -114,7 +105,9 @@ function love.update(dt)
             --o:RealDestroy()
             objects[k] = nil
         else
-            o:Draw()
+            if o.Update then
+                o:Update(dt)
+            end
         end
   end       
     
@@ -143,7 +136,9 @@ end
 function love.draw()
 
   for _, o in pairs( objects ) do
-    o:Draw()
+    if o.Draw then
+        o:Draw()
+    end
   end 
    love.graphics.setColor( 0,0,0,255 ) 
   love.graphics.print(text,0,12)

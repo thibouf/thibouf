@@ -23,6 +23,6 @@ function Rad2Vect( r )
 end
 
 function VectToRad( x, y )
-    return math.atan( x, y )
+    return math.atan2( x, -y ) - math.pi / 2
 end
 ------------------------------------------
