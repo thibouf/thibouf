@@ -1,4 +1,5 @@
 require( "YaciCode" )
+require( "BubbleClass" )
 
 Towel = class("Towel")
 
@@ -77,9 +78,9 @@ function Towel:Fire()
     local y = ty - self.y
          
     local x2, y2 = Normalize( x, y )
-    local b =   BubbleClass:new( self.x + x2 * 1, self.y +  y2 * 1  , self.bubbleColor )
-    b:NextColor()
-    self.bubbleColor = b.colorName
+    local b =  BubbleClass:new( self.x + x2 * 1, self.y +  y2 * 1  , self.bubbleColor )
+
+    self.bubbleColor = BubbleClass.static.NextColor( self.bubbleColor )
     
     local speed = 600
     b.body:setLinearVelocity(  x2 * speed,  y2 * speed)

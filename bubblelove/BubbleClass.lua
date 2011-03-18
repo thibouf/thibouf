@@ -6,8 +6,11 @@ bubbleId = 0
 nbLink = 0
 
 
+
+
 BubbleClass = class("BubbleClass")
 BubbleClass:setDefaultVirtual(true)
+
 
 BubbleColors = 
 {
@@ -23,7 +26,6 @@ BubbleColors =
     {
         rgba  = { 0,255, 0, 255 },
     },
-
     Yellow = 
     {
         rgba  = { 255,255, 0, 255 },
@@ -41,6 +43,21 @@ BubbleColors =
         rgba  = { 255,255, 255, 255 },
     },
 }
+
+function BubbleClass.NextColor( color, useSpecial )
+    col = BubbleColors[ color ]
+    -- debug.debug()
+    local k, c = next( BubbleColors, color )
+    -- debug.debug()
+    if k == nil then
+        k, c = next( BubbleColors )
+    end
+    if not useSpecial and k == "Special" then
+      
+         k, c = BubbleClass.static.NextColor( k )
+    end
+    return k, c
+end
 
 
 BubbleClass.Radius = 10
@@ -80,31 +97,24 @@ function BubbleClass:CreateShape( )
     --world:update(0)
     self.shape:setMask(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16)
     world:update(0)
-    self.shape:setMask()
+    self.shape:setMask( 16 )
+    self.shape:setCategory( 1 )
     -- world:update(0)
    -- shapes[1]:setRestitution( 1 )
 
 end
 
+function BubbleClass:SetMass( m )
+    self.body:setMass( self.body:getX(), self.body:getY(), m, 0 )
+end
+
 function BubbleClass:SetColor( color )
     self.colorName = color   
     self.color = BubbleColors[ color ]
-    self:StartCheckDestroy()
+    -- self:StartCheckDestroy()
 end
 
-function BubbleClass:NextColor( )
-    local k, c = next( BubbleColors, self.colorName )
-    if k == nil then
-        k, c = next( BubbleColors )
-    end
-    self.colorName = k   
-    self.color = c
-    if k == "Special" then
-        self:NextColor( )
-    else
-        self:StartCheckDestroy()
-    end
-end
+
 
 function BubbleClass:Update(dt)
     if not self.ready then
@@ -185,12 +195,6 @@ function BubbleClass:CheckDestroy( currentNbSame, doDestroy )
 end
 BubbleClass:virtual( "CheckDestroy" )
 
-function BubbleClass:DestroyAllJoints()
-    for _, j in pairs( self.joints ) do
-       -- j:destroy()
-    end
-end
-
 
 function BubbleClass:StartCheckDestroy()
     --TODO : wait a bit so the bubble is stabilized
@@ -207,8 +211,12 @@ end
 BubbleClass:virtual( "StartCheckDestroy" )
 
 
-function BubbleClass:NotifyCollide( withBubble )
+function BubbleClass:NotifyCollide( obj )
+    if obj.name == "Vessel" then
+        return
+    end
     self.collideSomething = true
+    
 end
 
 function BubbleClass:Join( withBubble, createJoin )
@@ -264,11 +272,14 @@ end
 
 function BubbleClass:Destroy()
     self.destroyed = true
+    if self.onDestroyCallback then
+        self.onDestroyCallback.f(self.onDestroyCallback.p, self.ready)
+    end
     self.shape:setMask(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16)
     self.destroyTime = love.timer.getTime( )
     self:RemoveAllLinks()
     self.body:setLinearVelocity( 0, 0 )
-     self.body:setMass( self.body:getX(), self.body:getY(),  -self.Mass, 0 )
+    self:SetMass( -self.Mass )
     
 end
 BubbleClass:virtual( "Destroy" )

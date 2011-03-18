@@ -106,7 +106,7 @@ function love.update(dt)
     text = love.timer.getFPS() .. " - "
   
   world:update(dt) --this puts the world into motion
-  local F = 1000
+  local F = 400
     V:ResetEngineForce()
   --here we are going to create some keyboard events
   if love.keyboard.isDown("right") then --press the right arrow key to push the ball to the right
@@ -145,7 +145,7 @@ function love.mousepressed( x, y, button )
     elseif button == "wd" then
         V:NextColor( )
     elseif button == "wu" then
-        V:SetColor( "Red" )
+        V:SetColor( "Special" )
    end
 end
 

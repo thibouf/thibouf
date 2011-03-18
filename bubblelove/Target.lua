@@ -23,10 +23,12 @@ function Target:Draw()
 end
 
 function Target:NotifyCollide( withBubble )
-    if self.colorName == "Special" or withBubble.colorName == self.colorName then
-        self.vessel:AddAmmo( withBubble.colorName )
-        withBubble:OnTarget()
-
+    
+    if withBubble.name == "Bubble" and  ( self.colorName == "Special" or withBubble.colorName == self.colorName) then
+        if withBubble.ready then
+            self.vessel:AddAmmo( withBubble.colorName )
+            withBubble:OnTarget()
+        end
         -- self.vessel.ammoPerColor[  withBubble.colorName ] = self.vessel.ammoPerColor[  withBubble.colorName ] + 1
     end
 end
