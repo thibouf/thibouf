@@ -1,14 +1,15 @@
 require( "YaciCode" )
 
-DRAW_JOINTS = false
+DRAW_JOINTS = true
 
 bubbleId = 0
 nbLink = 0
 
 
-BubbleClass = newclass("BubbleClass")
+BubbleClass = class("BubbleClass")
+BubbleClass:setDefaultVirtual(true)
 
-BubbleClass.BubbleColors = 
+BubbleColors = 
 {
     Red = 
     {
@@ -65,7 +66,8 @@ function BubbleClass:init( x, y, color )
     self.ready = false
     self.collideSomething = false
     self.frameWithoutColliding = 0
- 
+    self.destroyingDuration = 0.1
+    self.destroyTime = love.timer.getTime( )
     return b
 end
 
@@ -86,14 +88,14 @@ end
 
 function BubbleClass:SetColor( color )
     self.colorName = color   
-    self.color = self.BubbleColors[ color ]
+    self.color = BubbleColors[ color ]
     self:StartCheckDestroy()
 end
 
 function BubbleClass:NextColor( )
-    local k, c = next( self.BubbleColors, self.colorName )
+    local k, c = next( BubbleColors, self.colorName )
     if k == nil then
-        k, c = next( self.BubbleColors )
+        k, c = next( BubbleColors )
     end
     self.colorName = k   
     self.color = c
@@ -120,26 +122,41 @@ function BubbleClass:Update(dt)
         end
     end
 
+    if  self.destroyed and love.timer.getTime( ) - self.destroyTime > self.destroyingDuration then
+        self.realDestroyed = true
+    end
+    
+    self.scale = 1
+
+    if self.destroyed then
+        self.scale = 1 + ( love.timer.getTime( ) - self.destroyTime ) / self.destroyingDuration
+    end
+    
 end
 
 function BubbleClass:Draw()
 --text = text .. self.color
-    if self.destroyed or not self.ready then
+    if self.realDestroyed or not self.ready then
         return
     end
     
+
+
     love.graphics.setColor( self.color.rgba ) 
     love.graphics.setLineStipple( 0xFFFF, 1 )
-    love.graphics.circle("line", self.body:getX(), self.body:getY(), self.shape:getRadius(), 20)
+    love.graphics.circle("line", self.body:getX(), self.body:getY(), self.shape:getRadius() * self.scale, 20)
     love.graphics.setColor( self.color.rgba[1],self.color.rgba[2],self.color.rgba[3], 50) 
-   
-    love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.shape:getRadius(), 20)
+
+    love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.shape:getRadius()* self.scale, 20)
     if self.body:getMass() == 0 then
         love.graphics.circle("line", self.body:getX(), self.body:getY(), self.shape:getRadius() -2, 5)
     end
+
+    
     if DRAW_JOINTS and self.joints then  
         for _, j in pairs( self.joints ) do
-           love.graphics.setColor(0, 0, 0)
+            love.graphics.setLineStipple( 0xFFFF, 1 )
+           love.graphics.setColor(50, 50, 50)
            x1, y1, x2, y2 = j:getAnchors()
            love.graphics.line( x1, y1, x2, y2 )
         end
@@ -215,7 +232,8 @@ function BubbleClass:Join( withBubble, createJoin )
     if createJoin then
         local joint = love.physics.newDistanceJoint( self.body, withBubble.body, self.body:getX() , self.body:getY(), withBubble.body:getX(), withBubble.body:getY() )
         joint:setCollideConnected( false )
-        joint:setDamping( 0 )
+        -- joint:setFrequency( 60 )
+        -- joint:setDamping( 0.1 )
         joint:setLength( self.shape:getRadius() + withBubble.shape:getRadius() + 1  )
         withBubble:Join( self, false )
         self.joints[ withBubble.id ] = joint
@@ -247,8 +265,11 @@ end
 function BubbleClass:Destroy()
     self.destroyed = true
     self.shape:setMask(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16)
-
+    self.destroyTime = love.timer.getTime( )
     self:RemoveAllLinks()
+    self.body:setLinearVelocity( 0, 0 )
+     self.body:setMass( self.body:getX(), self.body:getY(),  -self.Mass, 0 )
+    
 end
 BubbleClass:virtual( "Destroy" )
 
@@ -257,5 +278,9 @@ function BubbleClass:RealDestroy()
         -- self.shape:destroy()
         -- self.body:destroy()
     end
+end
+
+function BubbleClass:OnTarget()
+    self:Destroy()
 end
 ----------------------------------------------------------------------------------------------------

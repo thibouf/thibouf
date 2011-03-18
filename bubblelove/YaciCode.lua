@@ -1,227 +1,235 @@
------------------------------------------------------------------------------------
--- Yet Another Class Implementation (version 1.2)
+-- Yet Another Class Implementation (version 2.0)
 --
--- Julien Patte [julien.patte AT gmail DOT com] - 25 Feb 2007
+-- original version by Julien Patte [julien.patte AT gmail DOT com] - 25 Feb 2007
+-- version 2 Modifications by Enrique Garcia - oct 2009
 --
 -- Inspired from code written by Kevin Baca, Sam Lie, Christian Lindig and others
 -- Thanks to Damian Stewart and Frederic Thomas for their interest and comments
 -----------------------------------------------------------------------------------
 
-do	-- keep local things inside
+do  -- keep local things inside
 
--- associations between an object an its meta-informations
--- e.g its class, its "lower" object (if any), ...
-local metaObj = {}
-setmetatable(metaObj, {__mode = "k"})
-
------------------------------------------------------------------------------------
--- internal function 'duplicate'
--- return a shallow copy of table t
-
-local function duplicate(t)
-  t2 = {}
-  for k,v in pairs(t) do t2[k] = v end
-  return t2
-end
-	
------------------------------------------------------------------------------------
--- internal function 'newInstance'
-
-local function newInstance(class, ...) 
-
-  local function makeInstance(class, virtuals)
-    local inst = duplicate(virtuals)
-    metaObj[inst] = { obj = inst, class = class }
+  -- associations between an object an its meta-informations
+  -- e.g its class, its "lower" object (if any), ...
+  local metaObj = {}
+  setmetatable(metaObj, {__mode = "k"})
   
-    if class:super()~=nil then
-      inst.super = makeInstance(class:super(), virtuals)
-      metaObj[inst].super = metaObj[inst.super]	-- meta-info about inst
-      metaObj[inst.super].lower = metaObj[inst]
-    else 
-      inst.super = {}
-    end 
-  
-    setmetatable(inst, class.static)
-  
-    return inst
+  -----------------------------------------------------------------------------------
+  -- internal function 'callup'
+  -- Function used to transfer a method call from a class to its superclass
+  local callup_inst
+  local callup_target
+
+  local function callup(inst, ...)
+    return callup_target(callup_inst, ...)  -- call the superclass' method
   end
- 
-  local inst = makeInstance(class, metaObj[class].virtuals) 
-  inst:init(...)
-  return inst
-end
 
------------------------------------------------------------------------------------
--- internal function 'makeVirtual'
-
-local function makeVirtual(class, fname) 
-  local func = class.static[fname]
-  if func == nil then 
-    func = function() error("Attempt to call an undefined abstract method '"..fname.."'") end
-   end
-  metaObj[class].virtuals[fname] = func
-end
-
------------------------------------------------------------------------------------
--- internal function 'trycast'
--- try to cast an instance into an instance of one of its super- or subclasses
-
-local function tryCast(class, inst) 
-  local meta = metaObj[inst]
-  if meta.class==class then return inst end -- is it already the right class?
-  
-  while meta~=nil do	-- search lower in the hierarchy
-    if meta.class==class then return meta.obj end
-    meta = meta.lower
+    -- return a copy of table t (shallow copy: only level 1 is copied, non-recursive)
+  local function duplicate(origin, destination, keys)
+    if destination == nil then destination = {} end
+    -- no keys provided - duplicate all keys
+    if keys==nil then
+      for key,value in pairs(origin) do destination[key] = value end
+    else
+      -- duplicate only the keys provided
+      for _,key in pairs(keys) do destination[key] = origin[key] end
+    end
+    return destination
   end
   
-  meta = metaObj[inst].super  -- not found, search through the superclasses
-  while meta~=nil do	
-    if meta.class==class then return meta.obj end
-    meta = meta.super
-  end
+  Object = {
+    name = function(self) return 'Object' end,
+    super = function(self) return nil end,
+    inherits = function(class, other) return false end,
+    
+    virtual = function(self, fname)
+      if type(fname)=='table' then
+        for value,_ in pairs(fname) do self:virtual(value) end
+      else
+        local func = self.static[fname]
+        if func == nil then
+          func = function() error("Attempt to call an undefined abstract method '"..fname.."'") end
+        end
+        metaObj[self].virtuals[fname] = func
+      end
+    end,
+
+    new = function(self, ...)
+      local inst = self:makeInstance(metaObj[self].virtuals)
+      inst:init(...)
+      return inst
+    end,
+    
+    -- try to cast an instance into an instance of one of its super- or subClasses
+    -- returns nil if not possible
+    tryCast = function(self, inst)
+      local meta = metaObj[inst]
+      if meta.class==self then return inst end -- is it already the right class?
+
+      while meta~=nil do  -- search lower in the hierarchy
+        if meta.class==self then return meta.obj end
+        meta = meta.lower
+      end
+
+      meta = metaObj[inst].super  -- not found, search through the superclasses
+      while meta~=nil do
+        if meta.class==self then return meta.obj end
+        meta = meta.super
+      end
+      return nil -- could not execute casting
+    end,
+    
+    -- try to cast an instance into an instance of one of its superclasses or subClasses
+    -- throws an exception if not possible
+    cast = function(self, inst)
+      local casted = self:tryCast(inst)
+      if casted == nil then
+        error("Failed to cast " .. tostring(inst) .. " to a " .. class:name())
+      end
+      return casted
+    end,
+    
+    -- returns true if a class made an object, false otherwhise
+    made = function(self, obj)
+      if metaObj[obj]==nil then return false end -- is this really an object?
+      return (self:tryCast(obj) ~= nil) -- check if that class could cast the object
+    end,
+    
+    subClass = function(self, name)
+      if type(name)~="string" then name = "Unnamed" end
+      
+      local baseClass = self
+      
+      -- the new class
+      local theClass = {
+        name = function(self) return name end,
+        super = function(self) return baseClass end,
+        inherits = function(self, other) return (self==other or self:inherits(other)) end,
+      }
+      
+      duplicate(baseClass, theClass, {
+        'cast', 'extends', 'made', 'makeInstance', 'newMethod', 'new', 'subClass', 'tryCast', 
+        'setDefaultVirtual', 'getDefaultVirtual', 'virtual'
+      })
+
+      -- contains instance-related stuff: metamethods, the init method, class method,
+      -- and facilites for accessing instance attributes/methods
+      theClass.static = {
+        --init = function(inst,...) inst.super:init() end,
+        class = function() return theClass end,
+        __newindex = function(inst,key,value)
+          -- First check if this field isn't already
+          -- defined higher in the hierarchy
+          if inst.super[key] ~= nil then   
+            inst.super[key] = value;    -- Update the old value
+          else
+            rawset(inst,key,value);     -- Create the field
+          end
+        end
+      }
+      theClass.static.__index = function(inst, key) -- Look for field 'key' in instance 'inst'
+        local res = theClass.static[key]   -- attribute or method already exists?
+        if res~=nil then return res end    -- if yes, return it
+
+        res = inst.super[key]          -- Not found; search higher on the hierarchy
+
+        if type(res)=='function' and res ~= callup then  -- If it is a method of the superclass,
+          callup_inst = inst.super     -- we will need to do a special forwarding
+          callup_target = res          -- to call 'res' with the correct 'class'
+          return callup                -- The 'callup' function will do that
+        end
+
+        return res
+      end
+      duplicate(baseClass.static, theClass.static, {
+        '__add', '__call', '__concat', '__div', '__eq', '__le', '__len', '__lt',
+        '__mod', '__mul', '__pow', '__sub', '__tostring', '__unm'
+      })
+
+      setmetatable(theClass, {
+        __call = theClass.new,
+        __tostring = function() return ("class "..name) end,
+        __newindex = theClass.newMethod,
+      })
+      
+      metaObj[theClass] = { virtuals = duplicate(metaObj[baseClass].virtuals) }
+
+      return theClass
+    end,
+    
+    -- extension function - similar to ruby's extend for modules
+    -- adds the methods of t to the class
+    -- will include the methods as static or virtual, depending on defaultVirtual
+    extends = function(self, t)
+      duplicate(t, self)
+      if t.extended~=nil then t:extended(self) end
+    end,
+    
+    -- internal method used by "new" - do not use
+    makeInstance = function(self, virtuals)
+      --virtuals defaults to metaObj[self].virtuals if nil
+      virtuals = virtuals~=nil and virtuals or metaObj[self].virtuals 
+      local inst = duplicate(virtuals)
+      metaObj[inst] = { obj = inst, class = self }
+
+      local superClass = self:super()
+      if superClass~=nil then
+        inst.super = superClass:makeInstance(virtuals)
+        metaObj[inst].super = metaObj[inst.super]  -- meta-info about inst
+        metaObj[inst.super].lower = metaObj[inst]
+      else
+        inst.super = {}
+      end
+
+      setmetatable(inst, self.static)
+
+      return inst
+    end,
+    
+    setDefaultVirtual= function(self, value)
+      self.defaultVirtual = value
+    end,
+    
+    getDefaultVirtual= function(self)
+      return self.defaultVirtual
+    end,
+
+    -- internal method used by metatables, when creating new methods
+    newMethod = function(self, name, meth) --creates new methods
+      self.static[name] = meth;
+      if self.defaultVirtual==true or metaObj[self].virtuals[name]~=nil then
+        metaObj[self].virtuals[name] = meth
+      end
+    end
+  } --end of Object {
   
-  return nil -- could not execute casting
-end
-
------------------------------------------------------------------------------------
--- internal function 'secureCast'
--- same as trycast but raise an error in case of failure
-
-local function secureCast(class, inst) 
-  local casted = tryCast(class, inst)
-  if casted == nil then 
-	error("Failed to cast " .. tostring(inst) .. " to a " .. class:name())
-  end
-  return casted
-end
-
------------------------------------------------------------------------------------
--- internal function 'classMade'
-
-local function classMade(class, obj) 
-  if metaObj[obj]==nil then return false end -- is this really an object?
-  return (tryCast(class,obj) ~= nil) -- check if that class could cast the object
-end
-
-
------------------------------------------------------------------------------------
--- internal function 'callup'
--- Function used to transfer a method call from a class to its superclass
-
-local callup_inst
-local callup_target
-
-local function callup(inst, ...)
-  return callup_target(callup_inst, ...)	-- call the superclass' method
-end
-
-
------------------------------------------------------------------------------------
--- internal function 'subclass'
-
-local function inst_init_def(inst,...) 
-  inst.super:init() 
-end
-
-local function inst_newindex(inst,key,value)							
-  if inst.super[key] ~= nil then 	-- First check if this field isn't already
-									-- defined higher in the hierarchy
-	inst.super[key] = value;		-- Update the old value
-  else 
-  	rawset(inst,key,value); 		-- Create the field
-  end
-end
-
-local function subclass(baseClass, name) 
-  if type(name)~="string" then name = "Unnamed" end
+  Object:setDefaultVirtual(false) -- by default, methods are non-virtual
   
-  local theClass = {}
-
-	-- need to copy everything here because events can't be found through metatables
-  local b = baseClass.static
-  local inst_stuff = { __tostring=b.__tostring, __eq=b.__eq, __add=b.__add, __sub=b.__sub, 
-	__mul=b.__mul, __div=b.__div, __mod=b.__mod, __pow=b.__pow, __unm=b.__unm, 
-	__len=b.__len, __lt=b.__lt, __le=b.__le, __concat=b.__concat, __call=b.__call}
- 
-  inst_stuff.init = inst_init_def
-  inst_stuff.__newindex = inst_newindex
-  function inst_stuff.class() return theClass end
-
-  function inst_stuff.__index(inst, key) -- Look for field 'key' in instance 'inst'
-	local res = inst_stuff[key] 		-- Is it present?
-	if res~=nil then return res end		-- Okay, return it
-	
-	res = inst.super[key]  				-- Is it somewhere higher in the hierarchy?
-	
-	if type(res)=='function' and
-		res ~= callup then 				-- If it is a method of the superclass,
-		callup_inst = inst.super  		-- we will need to do a special forwarding
-		callup_target = res  			-- to call 'res' with the correct 'self'
-		return callup 					-- The 'callup' function will do that
-	end
-	
-	return res
-  end
- 
-
-  local class_stuff = { static = inst_stuff, made = classMade, new = newInstance,
-	subclass = subclass, virtual = makeVirtual, cast = secureCast, trycast = tryCast }
-  metaObj[theClass] = { virtuals = duplicate(metaObj[baseClass].virtuals) }
+  Object.static = {
+    init = function(inst,...) end,
+    __tostring = function(inst) return ("a "..inst:class():name()) end,
+    class = function() return Object end
+  }
   
-  function class_stuff.name(class) return name end
-  function class_stuff.super(class) return baseClass end
-  function class_stuff.inherits(class, other) 
-	return (baseClass==other or baseClass:inherits(other)) 
-  end
- 
-  local function newmethod(class, name, meth)
-	inst_stuff[name] = meth;
-	if metaObj[class].virtuals[name]~=nil then 
-		metaObj[class].virtuals[name] = meth	
-	end
-  end
+  Object.static.__index = Object.static
   
-  local function tos() return ("class "..name) end
-  setmetatable(theClass, { __newindex = newmethod, __index = class_stuff, 
-	__tostring = tos, __call = newInstance } )
- 
-  return theClass
-end
+  setmetatable(Object, {
+    __call = Object.new,
+    __tostring = function() return ("class Object") end,
+    __newindex = Object.newMethod
+  })
+  
+  metaObj[Object] = { virtuals={} }
 
------------------------------------------------------------------------------------
--- The 'Object' class
+  ----------------------------------------------------------------------
+  -- function 'class'
 
-Object = {}
+  function class(name, baseClass)
+    baseClass = baseClass or Object
+    return baseClass:subClass(name)
+  end
 
-local function obj_newitem() error "May not modify the class 'Object'. Subclass it instead." end
-local obj_inst_stuff = {}
-function obj_inst_stuff.init(inst,...) end
-obj_inst_stuff.__index = obj_inst_stuff
-obj_inst_stuff.__newindex = obj_newitem
-function obj_inst_stuff.class() return Object end
-function obj_inst_stuff.__tostring(inst) return ("a "..inst:class():name()) end
-
-local obj_class_stuff = { static = obj_inst_stuff, made = classMade, new = newInstance,
-	subclass = subclass, cast = secureCast, trycast = tryCast }
-function obj_class_stuff.name(class) return "Object" end
-function obj_class_stuff.super(class) return nil end
-function obj_class_stuff.inherits(class, other) return false end
-metaObj[Object] = { virtuals={} }
-
-local function tos() return ("class Object") end
-setmetatable(Object, { __newindex = obj_newitem, __index = obj_class_stuff, 
-	__tostring = tos, __call = newInstance } )
-
-----------------------------------------------------------------------
--- function 'newclass'
-
-function newclass(name, baseClass)
- baseClass = baseClass or Object
- return baseClass:subclass(name)
-end
-
-end -- 2 global things remain: 'Object' and 'newclass'
+end -- 2 global things remain: 'Object' and 'class'
 
 -- end of code
 

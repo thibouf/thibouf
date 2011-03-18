@@ -14,7 +14,7 @@ function WallClass.new( x, y, width, height)
 end
 
 function WallClass:Draw()
-    love.graphics.setColor(200,0, 0)
+    love.graphics.setColor(0,0, 200)
     love.graphics.rectangle("fill", self.body:getX() - self.width/2, self.body:getY() - self.height/2, self.width, self.height)
 
 end

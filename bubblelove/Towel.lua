@@ -1,6 +1,6 @@
 require( "YaciCode" )
 
-Towel = newclass("Towel")
+Towel = class("Towel")
 
 Towel.Steps=
 {

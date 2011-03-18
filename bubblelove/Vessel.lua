@@ -1,18 +1,17 @@
 require( "BubbleClass" )
 require( "Math" )
 
-Vessel = BubbleClass:subclass( "Vessel" )
-
+Vessel = BubbleClass:subClass( "Vessel" )
 
 function Vessel:init( x, y, color )
-    self.Radius = 12
+    self.Radius = 10
     self.Mass = 300
     self.super:init( x, y, color )
     
     self.image = love.graphics.newImage( "test.png" )
     self.particleSystem = love.graphics.newParticleSystem( self.image, 100 )
 
-   self.particleSystem:setEmissionRate(100)
+    self.particleSystem:setEmissionRate(100)
     self.particleSystem:setSpeed(300, 400)
     self.particleSystem:setGravity(0)
     self.particleSystem:setSize(1, 1,1)
@@ -26,10 +25,22 @@ function Vessel:init( x, y, color )
 
     self.particleSystem:start()
     
+    self.ammoPerColor = {}
+    self.creationTime = love.timer.getTime( )
+    for cName, c in pairs( BubbleColors ) do
+         self.ammoPerColor[ cName ] = 10
+    end
+    
+    self.shape:setData( self )
+    
 end
 
 function Vessel:Fire()
-   
+    if  self.destroyed or self.ammoPerColor[  self.colorName ] <= 0 then
+        return
+    else
+       self:ConsumeAmmo()
+    end
     local sx, sy = self.body:getLinearVelocity( )
 
      local mx, my = love.mouse.getPosition( )
@@ -44,10 +55,28 @@ function Vessel:Fire()
     b.body:setLinearVelocity(  x2 * speed,  y2 * speed)
     table.insert( objects,b )
     --b.shape:setSensor( true )
+    if  self.ammoPerColor[  self.colorName ] == 0 then
+        self:NextColor()
+    end
+    
+    self.creationTime = love.timer.getTime( )
 end
 
 function Vessel:Update(dt)
-    self.super:Update( )
+
+    self.super:Update()
+    if self.realDestroyed == true then
+  
+        self.realDestroyed = false
+        self.destroyed = false
+        self.creationTime = love.timer.getTime( )
+    end
+    
+    local livingDuration = love.timer.getTime( ) - self.creationTime 
+    if not self.destroyed and livingDuration < self.destroyingDuration then
+        self.scale = livingDuration / self.destroyingDuration
+    end
+    
     self.body:applyForce(self.engineForce.x, self.engineForce.y)
     self.particleSystem:setPosition( self.body:getX(), self.body:getY() )
     if self.engineForce.x == 0 and self.engineForce.y == 0 then
@@ -109,7 +138,12 @@ function Vessel:Draw()
                         V.body:getY() + yn *  self.shape:getRadius() * 10)
     love.graphics.polygon( 'fill', x1,y1, x2,y2 ,x3,y3)
     
-
+    love.graphics.setColor( 255,255,255,255 ) 
+    local ammoTxt = ""
+    for cName, ammo in pairs( self.ammoPerColor ) do 
+      ammoTxt = ammoTxt .. cName .."[" .. ammo .."] - " 
+    end
+    love.graphics.print(ammoTxt,20,15)
 end
 
 
@@ -121,7 +155,34 @@ end
 --    return
 --end
 
+function Vessel:ConsumeAmmo()
+   if not self.destroyed then
+        self.ammoPerColor[ self.colorName ] = self.ammoPerColor[  self.colorName ] - 1
+    end
+end
+Vessel:virtual( "ConsumeAmmo" )
+
+function Vessel:AddAmmo( colorName )
+   if not self.destroyed then
+        self.ammoPerColor[ colorName ] = self.ammoPerColor[  colorName ] + 1
+    end
+end
+
+
 function Vessel:Destroy()
-    self:RemoveAllLinks( )
+    if not self.destroyed then
+        self:ConsumeAmmo( )
+        self.destroyed = true
+        self.destroyTime = love.timer.getTime()
+        self:RemoveAllLinks( )
+    end
+end
+
+
+
+function Vessel:OnTarget()
+    self:Destroy()
     return
 end
+
+
