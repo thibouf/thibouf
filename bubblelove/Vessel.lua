@@ -10,7 +10,7 @@ function Vessel:init( x, y, color )
     -- self.super:init( x, y, color )
     self.body = love.physics.newBody( world, x, y , self.Mass, 0 )
     self.body:setLinearDamping( 0.2 ) 
-    self.shape = love.physics.newCircleShape(self.body, 0, 0, self.Radius )
+    self.shape = love.physics.newCircleShape(self.body, 0, 0, self.Radius + 1 )
     self.shape:setData( self )
     self.shape:setRestitution( 1 )
     self.shape:setFriction( 0 )
@@ -30,15 +30,16 @@ function Vessel:init( x, y, color )
     self.particleSystem = love.graphics.newParticleSystem( self.image, 100 )
 
     self.particleSystem:setEmissionRate(100)
-    self.particleSystem:setSpeed(300, 400)
+    self.particleSystem:setSpeed(100, 200)
     self.particleSystem:setGravity(0)
-    self.particleSystem:setSize(1, 1,1)
+    self.particleSystem:setSize(0.1, 1,1)
+   	--self.particleSystem:setSizeVariation(10)
     self.particleSystem:setColor(255, 255, 255, 255, 58, 128, 255, 0)
     self.particleSystem:setPosition(400, 300)
     self.particleSystem:setLifetime(-1)
     self.particleSystem:setParticleLife(0.3)
     self.particleSystem:setDirection(0)
-    self.particleSystem:setSpread(0.5)
+    self.particleSystem:setSpread(1)
     self.particleSystem:setSpin(0,1,1)
 
     self.particleSystem:start()
@@ -73,15 +74,15 @@ end
 function Vessel:ReleaseBubble()
     -- self.bubble:SetMass( self.bubble.Mass )
     -- self:SetMass( self.Mass )
-    
-    table.insert( objects, self.bubble )
-    self.bubble:SetMass( self.bubble.Mass )
-    self.bubbleJoint:destroy()
-    self.bubbleJoint = nil
-    self.bubble.onDestroyCallback = nil
+    if self.bubble then
+		table.insert( objects, self.bubble )
+		self.bubble:SetMass( self.bubble.Mass )
+		self.bubbleJoint:destroy()
+		self.bubbleJoint = nil
+		self.bubble.onDestroyCallback = nil
 
-    self.bubble = nil
-
+		self.bubble = nil
+	end
 
 end
 
@@ -127,7 +128,7 @@ function Vessel:SetColor( color )
 end
 
 function Vessel:NextColor( )
-    local k, c = BubbleClass.static.NextColor( self.color, true )
+    local k, c = BubbleClass.static.NextColor( self.color, false )
     self:SetColor( k )
     
     if  self.ammoPerColor[ self.color ] == 0 then
@@ -136,12 +137,12 @@ function Vessel:NextColor( )
 end
 
 function Vessel:Fire()
-    if not self.bubble then
+    if not self.bubble or not self.bubble.ready then
         return
     end
     local sx, sy = self.body:getLinearVelocity( )
 
-     local mx, my = love.mouse.getPosition( )
+     local mx, my = GetMousePosition( )
      local x = mx - self.body:getX()
     local y = my - self.body:getY()
          
@@ -231,7 +232,7 @@ function Vessel:Draw()
     
  
     love.graphics.setColor( BubbleColors[ self.color ].rgba ) 
-    local x, y = love.mouse.getPosition( )
+    local x, y = GetMousePosition()
     local xn, yn = Normalize( x - V.body:getX(), y - V.body:getY() )
     local x1 = V.body:getX() + xn *  self.Radius
     local y1 = V.body:getY() + yn *  self.Radius
@@ -253,7 +254,13 @@ function Vessel:Draw()
                         V.body:getY() + yn *  self.Radius * 10)
     love.graphics.polygon( 'fill', x1,y1, x2,y2 ,x3,y3)
     
+
+
     love.graphics.setColor( 255,255,255,255 ) 
+	love.graphics.print( self.ammoPerColor[ self.color ],  self.body:getX() - 5, self.body:getY() - 5,0, 0.8,0.8 )
+
+    love.graphics.setColor( 255,255,255,255 ) 
+
     local ammoTxt = ""
     for cName, ammo in pairs( self.ammoPerColor ) do 
       ammoTxt = ammoTxt .. cName .."[" .. ammo .."] - " 

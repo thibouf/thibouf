@@ -1,9 +1,9 @@
 require( "YaciCode" )
 require( "BubbleClass" )
 
-Towel = class("Towel")
+Tower = class("Tower")
 
-Towel.Steps=
+Tower.Steps=
 {
     [ 1 ] = 
     { 
@@ -32,7 +32,7 @@ Towel.Steps=
     
 }
 
-function Towel:init( x , y, target )
+function Tower:init( x , y, target )
     self.x = x
     self.y = y
     self.target = target
@@ -43,14 +43,14 @@ function Towel:init( x , y, target )
     self.bubbleColor = "Blue"
 end
 
-function Towel:Draw()
+function Tower:Draw()
     love.graphics.setColor( 255,255,255,255 ) 
     love.graphics.setLineStipple( 0xFF0F, 1 )
     love.graphics.circle("line", self.x, self.y, 5, 4)
 end
 
 
-function Towel:Update()
+function Tower:Update()
     local time = love.timer.getTime( )
     local dt = time - self.lastFireTime
 
@@ -69,7 +69,7 @@ function Towel:Update()
 end
 
 
-function Towel:Fire()
+function Tower:Fire()
 
     local tx =  self.target.body:getX()
     local ty =  self.target.body:getY()

@@ -45,7 +45,7 @@ BubbleColors =
 }
 
 function BubbleClass.NextColor( color, useSpecial )
-    col = BubbleColors[ color ]
+    local col = BubbleColors[ color ]
     -- debug.debug()
     local k, c = next( BubbleColors, color )
     -- debug.debug()
@@ -63,9 +63,12 @@ end
 BubbleClass.Radius = 10
 BubbleClass.Mass = 50
 
-function BubbleClass:init( x, y, color )
+function BubbleClass:init( x, y, color, mass )
     self.id = bubbleId
     bubbleId = bubbleId + 1
+	if mass then
+		self.Mass = mass
+	end
     self.body = love.physics.newBody( world, x, y , self.Mass, 0 )
     self.body:setAngularVelocity( 0 )
     self.body:setLinearDamping( 0.2 ) 
@@ -84,7 +87,9 @@ function BubbleClass:init( x, y, color )
     self.collideSomething = false
     self.frameWithoutColliding = 0
     self.destroyingDuration = 0.1
+	self.creatingDuration = 0.05
     self.destroyTime = love.timer.getTime( )
+  self.scale = 1
     return b
 end
 
@@ -117,7 +122,7 @@ end
 
 
 function BubbleClass:Update(dt)
-    if not self.ready then
+--[[    if not self.ready then
         if self.collideSomething then
             self:Destroy() 
         else
@@ -131,37 +136,66 @@ function BubbleClass:Update(dt)
             end
         end
     end
-
-    if  self.destroyed and love.timer.getTime( ) - self.destroyTime > self.destroyingDuration then
+]]
+	if not self.ready and not  self.destroyed then
+	 	self.shape:setSensor( false )
+		if self.collideSomething then
+            self:Destroy() 
+		else
+			if ( love.timer.getMicroTime( ) - self.spawnTime ) >= self.creatingDuration then
+				self.ready = true
+			end
+		end
+	end
+	
+    if  self.destroyed and (love.timer.getTime( ) - self.destroyTime) > self.destroyingDuration then
         self.realDestroyed = true
+		
     end
     
     self.scale = 1
 
-    if self.destroyed then
-        self.scale = 1 + ( love.timer.getTime( ) - self.destroyTime ) / self.destroyingDuration
+	if not self.ready then
+	  	self.scale =  ( love.timer.getMicroTime( ) - self.spawnTime ) / self.creatingDuration
     end
+
+    if self.destroyed then
+        self.scale =  self.scale * ( 1 + ( love.timer.getTime( ) - self.destroyTime ) / self.destroyingDuration )
+	end
     
+end
+
+function BubbleClass:GetNbLinks()
+	-- TODO: optimize by counting links
+	local n = 0
+
+ 	for _,_ in pairs( self.jointBubbles ) do 
+		n = n +1
+	end
+	return n
 end
 
 function BubbleClass:Draw()
 --text = text .. self.color
-    if self.realDestroyed or not self.ready then
+    if self.realDestroyed then
         return
     end
     
 
 
     love.graphics.setColor( self.color.rgba ) 
+	if DEBUG then
+		love.graphics.print( self:GetNbLinks(),  self.body:getX(), self.body:getY() )
+	end
     love.graphics.setLineStipple( 0xFFFF, 1 )
     love.graphics.circle("line", self.body:getX(), self.body:getY(), self.shape:getRadius() * self.scale, 20)
-    love.graphics.setColor( self.color.rgba[1],self.color.rgba[2],self.color.rgba[3], 50) 
+    love.graphics.setColor( self.color.rgba[1],self.color.rgba[2],self.color.rgba[3], 128) 
 
     love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.shape:getRadius()* self.scale, 20)
     if self.body:getMass() == 0 then
         love.graphics.circle("line", self.body:getX(), self.body:getY(), self.shape:getRadius() -2, 5)
     end
-
+ 	
     
     if DRAW_JOINTS and self.joints then  
         for _, j in pairs( self.joints ) do
@@ -228,7 +262,8 @@ function BubbleClass:Join( withBubble, createJoin )
         return
     end
    
-    if table.getn( self.jointBubbles ) > 6 then
+
+    if self:GetNbLinks() > 6 then
         return
     end
     
@@ -242,13 +277,16 @@ function BubbleClass:Join( withBubble, createJoin )
         joint:setCollideConnected( false )
         -- joint:setFrequency( 60 )
         -- joint:setDamping( 0.1 )
-        joint:setLength( self.shape:getRadius() + withBubble.shape:getRadius() + 1  )
+        joint:setLength( self.shape:getRadius() + withBubble.shape:getRadius() - 1  )
         withBubble:Join( self, false )
         self.joints[ withBubble.id ] = joint
         nbLink = nbLink + 1
     end
     self.jointBubbles[ withBubble.id ] =  withBubble
+
+	
     self:StartCheckDestroy()
+
 end
 
 
@@ -271,6 +309,7 @@ function BubbleClass:RemoveAllLinks(  )
 end
 
 function BubbleClass:Destroy()
+
     self.destroyed = true
     if self.onDestroyCallback then
         self.onDestroyCallback.f(self.onDestroyCallback.p, self.ready)
@@ -278,8 +317,9 @@ function BubbleClass:Destroy()
     self.shape:setMask(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16)
     self.destroyTime = love.timer.getTime( )
     self:RemoveAllLinks()
-    self.body:setLinearVelocity( 0, 0 )
-    self:SetMass( -self.Mass )
+	local vx , vy = self.body:getLinearVelocity( )
+    self.body:setLinearVelocity( vx / 2 , vy / 2 )
+   --self:SetMass( -self.Mass )
     
 end
 BubbleClass:virtual( "Destroy" )
