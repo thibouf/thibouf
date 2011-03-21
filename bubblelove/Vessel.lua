@@ -5,7 +5,8 @@ Vessel = class( "Vessel" )
 
 function Vessel:init( x, y, color )
     self.Radius = 10
-    self.Mass = 50
+    -- self.Mass = 50
+        self.Mass = 0
     self.name = "Vessel"
     -- self.super:init( x, y, color )
     self.body = love.physics.newBody( world, x, y , self.Mass, 0 )
@@ -149,12 +150,13 @@ function Vessel:Fire()
     local x2, y2 = Normalize( x, y )
     -- local b =   BubbleClass:new( self.body:getX() + x2 * ( self.shape:getRadius() + 11 )   , self.body:getY() +  y2 * ( self.shape:getRadius() + 11 )  , self.colorName )
    -- local b =   BubbleClass.new( self.body:getX()   , self.body:getY()   , "Green" )
-    local speed = 600
+    local f = 40
    -- b.body:setLinearVelocity( sx + x2 * speed, sy + y2 * speed)
    
     --Release bubble
-    self.bubble.body:setLinearVelocity(  x2 * speed,  y2 * speed)
-    self.bubble:RemoveAllLinks()
+    -- self.bubble.body:setLinearVelocity(  x2 * speed,  y2 * speed)
+    self.bubble.body:applyImpulse(  x2 * f,  y2 * f,self.body:getX()   , self.body:getY())
+    -- self.bubble:RemoveAllLinks()
     self:ReleaseBubble()
     
     

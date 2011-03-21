@@ -147,10 +147,9 @@ function BubbleClass:Update(dt)
 			end
 		end
 	end
-	
+	local dt = love.timer.getTime( ) - self.destroyTime
     if  self.destroyed and (love.timer.getTime( ) - self.destroyTime) > self.destroyingDuration then
         self.realDestroyed = true
-		
     end
     
     self.scale = 1
@@ -159,8 +158,11 @@ function BubbleClass:Update(dt)
 	  	self.scale =  ( love.timer.getMicroTime( ) - self.spawnTime ) / self.creatingDuration
     end
 
-    if self.destroyed then
-        self.scale =  self.scale * ( 1 + ( love.timer.getTime( ) - self.destroyTime ) / self.destroyingDuration )
+    if self.destroyed and not self.realDestroyed then 
+        self.scale = self.scale * ( ( love.timer.getTime( ) - self.destroyTime ) / self.destroyingDuration )
+        deb = "scle" .. self.scale .. "dt" .. love.timer.getTime( ) - self.destroyTime  .. "dura" .. self.destroyingDuration
+        
+        -- debug.debug()
 	end
     
 end
@@ -182,10 +184,11 @@ function BubbleClass:Draw()
     end
     
 
-
+    -- DEBUG =true
     love.graphics.setColor( self.color.rgba ) 
 	if DEBUG then
-		love.graphics.print( self:GetNbLinks(),  self.body:getX(), self.body:getY() )
+		-- love.graphics.print( self:GetNbLinks(),  self.body:getX(), self.body:getY() )
+        love.graphics.print(   ( love.timer.getTime( ) - self.destroyTime )  / self.destroyingDuration,  self.body:getX(), self.body:getY() + 10 )
 	end
     love.graphics.setLineStipple( 0xFFFF, 1 )
     love.graphics.circle("line", self.body:getX(), self.body:getY(), self.shape:getRadius() * self.scale, 20)
@@ -200,8 +203,15 @@ function BubbleClass:Draw()
     if DRAW_JOINTS and self.joints then  
         for _, j in pairs( self.joints ) do
             love.graphics.setLineStipple( 0xFFFF, 1 )
-           love.graphics.setColor(50, 50, 50)
-           x1, y1, x2, y2 = j:getAnchors()
+            x1, y1, x2, y2 = j:getAnchors()
+          local sqrlen = (x2-x1) ^2 + (y2-y1) ^2
+            if sqrlen > ( self.shape:getRadius() * 2 + 2 ) ^ 2  then
+                love.graphics.setColor(255, 0,0)
+            else
+                love.graphics.setColor(50, 50, 50)
+            end
+            
+          
            love.graphics.line( x1, y1, x2, y2 )
         end
    end
@@ -274,9 +284,9 @@ function BubbleClass:Join( withBubble, createJoin )
 
     if createJoin then
         local joint = love.physics.newDistanceJoint( self.body, withBubble.body, self.body:getX() , self.body:getY(), withBubble.body:getX(), withBubble.body:getY() )
-        joint:setCollideConnected( false )
+        joint:setCollideConnected( true )
         -- joint:setFrequency( 60 )
-        -- joint:setDamping( 0.1 )
+        joint:setDamping( 1 )
         joint:setLength( self.shape:getRadius() + withBubble.shape:getRadius() - 1  )
         withBubble:Join( self, false )
         self.joints[ withBubble.id ] = joint
@@ -318,7 +328,7 @@ function BubbleClass:Destroy()
     self.destroyTime = love.timer.getTime( )
     self:RemoveAllLinks()
 	local vx , vy = self.body:getLinearVelocity( )
-    self.body:setLinearVelocity( vx / 2 , vy / 2 )
+    self.body:setLinearVelocity( vx / 10 , vy / 10 )
    --self:SetMass( -self.Mass )
     
 end

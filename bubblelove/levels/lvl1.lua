@@ -1,46 +1,55 @@
+local X = 1024
+local Y = 768
+
 local Level =
 {
 	 
 	{
 		T = "Wall",
-		x = 650/2,
-		y = 625,
-		h = 650,
+		x = X/2,
+		y = Y,
+		h = 50,
+		w = X,
+	},
+	{
+		T = "Wall",
+		x = X/2,
+		y = 0,
+		h = 50,
+		w = X,
+	},
+	{
+		T = "Wall",
+		x = 0,
+		y = Y/2,
+		h = Y,
 		w = 50,
 	},
 	{
 		T = "Wall",
-		x = 650/2,
-		y = 25,
-		h = 650,
+		x = X,
+		y = Y/2,
+		h = Y,
 		w = 50,
-	},
-	 
-	{
-		T = "Wall",
-		x = 25,
-		y = 650/2,
-		h = 50,
-		w = 650,
-	},
-	{
-		T = "Wall",
-		x = 625,
-		y = 650/2,
-		h = 50,
-		w = 650,
 	},
 	{
 		T = "Bubble",
-		x = 650/2,
+		x = X / 2 + 10,
 		y = 100,
+		color = "Special",
+		mass = 0,
+	},
+    	{
+		T = "Bubble",
+		x = X / 2 - 10,
+		y = 50,
 		color = "Special",
 		mass = 0,
 	},
 	{
 		T = "Bubble",
-		x = 650/2,
-		y = 80,
+		x = X / 2 ,
+		y = 50,
 		color = "Red",
 	},	 
 	{
@@ -57,8 +66,8 @@ local Level =
 	},	
 	{
 		T = "Vessel",
-		x = 650/2,
-		y = 650/2 + 50,
+		x = X / 2,
+		y = Y - 100,
 		color = "Special",
 	},
 	{
@@ -66,6 +75,14 @@ local Level =
 		x = 60,
 		y = 60,
 		target = 5,
+	},
+    {
+		T = "Target",
+		x = X / 2,
+		y = Y-50,
+        h = 50,
+		w = X,
+        color = "Special"
 	}
 }
 return Level

@@ -7,28 +7,34 @@ Tower.Steps=
 {
     [ 1 ] = 
     { 
-        intervale = 0.1,
+        intervale = 1,
         duration = 1,
-        nextStep = 2,
-    },
-    [ 2 ] = 
-    { 
-        intervale = 2,
-        duration = 10,
-        nextStep = 3,
-    },
-    [ 3 ] = 
-    { 
-        intervale = 0.1,
-        duration = 3,
-        nextStep = 4,
-    },
-    [ 4 ] = 
-    { 
-        intervale = 50,
-        duration = 500000,
         nextStep = 1,
     },
+    -- [ 1 ] = 
+    -- { 
+        -- intervale = 0.1,
+        -- duration = 1,
+        -- nextStep = 2,
+    -- },
+    -- [ 2 ] = 
+    -- { 
+        -- intervale = 2,
+        -- duration = 10,
+        -- nextStep = 3,
+    -- },
+    -- [ 3 ] = 
+    -- { 
+        -- intervale = 0.1,
+        -- duration = 3,
+        -- nextStep = 4,
+    -- },
+    -- [ 4 ] = 
+    -- { 
+        -- intervale = 50,
+        -- duration = 500000,
+        -- nextStep = 1,
+    -- },
     
 }
 

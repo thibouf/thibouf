@@ -56,10 +56,11 @@ function InitLevel( name )
 	local level  = require( "levels/" .. name )
 	for Id, att in pairs( level ) do
 		if att.T == "Wall" then
-			table.insert( objects, WallClass.new( att.x, att.y, att.h, att.w ) )
+			table.insert( objects, WallClass.new( att.x, att.y,  att.w, att.h ) )
 		elseif att.T == "Bubble" then
 			local B = BubbleClass:new( att.x,  att.y , att.color, att.mass )
 			B.ready = true
+            B.shape:setSensor( false )
 			table.insert( objects, B )
 	
 		elseif att.T == "Vessel" then
@@ -69,12 +70,15 @@ function InitLevel( name )
 		elseif att.T == "Tower" then
 		 	T = Tower:new(  att.x,  att.y , objects[ att.target ]  )
 			table.insert( objects, T )
+        elseif att.T == "Target" then
+            T = Target:new(  att.x,  att.y ,   att.w, att.h, att.color )
+            table.insert( objects, T )
 		end
 	end
 end
 
 function InitWorld()
-    world = love.physics.newWorld(-650, -650, 650, 650) --create a world for the bodies to exist in with width and height of 650
+    world = love.physics.newWorld(0, 0, 1024, 1024) --create a world for the bodies to exist in with width and height of 650
     world:setCallbacks(add, persist, rem, result)
     world:setGravity(0, 50) -- the x component of the gravity will be 0, and the y component of the gravity will be 700
     world:setMeter(64) --the height of a meter in this world will be 64px
@@ -184,15 +188,15 @@ end
 function LoadGame()
 	InitWorld()
 
-  for _, o in pairs( savedGame ) do
-	if o.name == "Bubble" then
-	 	local B = BubbleClass:new( o.body:getX(), o.body:getY(),  o.colorName )
-		B.ready = true
-		B:SetMass( o.body:getMass() )
- 		B.shape:setSensor( false )
-     	table.insert( objects, B )
-	end
-  end 
+  -- for _, o in pairs( savedGame ) do
+	-- if o.name == "Bubble" then
+	 	-- local B = BubbleClass:new( o.body:getX(), o.body:getY(),  o.colorName )
+		-- B.ready = true
+		-- B:SetMass( o.body:getMass() )
+ 		-- B.shape:setSensor( false )
+     	-- table.insert( objects, B )
+	-- end
+  -- end 
 end
 
 function love.keypressed(key, u)
@@ -219,7 +223,7 @@ function love.draw()
 	local targety= V.body:getY() 
 	local minX = 650/2 
 	local minY = 650/2
-	local maxX = 3000 
+	local maxX = 650/2 
 	local maxY = 650/2
 	if targetx < minX then
 		targetx = minX
@@ -246,7 +250,7 @@ function love.draw()
     end
   end 
    love.graphics.setColor( 0,0,0,255 ) 
-  love.graphics.print(text,0,12)
+  -- love.graphics.print(text,0,12)
   
  
   

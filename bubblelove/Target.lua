@@ -17,8 +17,12 @@ end
 
 function Target:Draw()
     love.graphics.setColor(0,255, 0, 255)
-    love.graphics.setColor( self.color.rgba[1],self.color.rgba[2],self.color.rgba[3], 200) 
+    love.graphics.setColor( self.color.rgba[1],self.color.rgba[2],self.color.rgba[3], 50) 
     love.graphics.rectangle("fill", self.body:getX() - self.width/2, self.body:getY() - self.height/2, self.width, self.height)
+    love.graphics.setLineStipple( 0x0F0F, 1 )
+
+    love.graphics.setColor( self.color.rgba[1],self.color.rgba[2],self.color.rgba[3], 255) 
+    love.graphics.rectangle("line", self.body:getX() - self.width/2, self.body:getY() - self.height/2, self.width, self.height)
 
 end
 
@@ -26,7 +30,9 @@ function Target:NotifyCollide( withBubble )
     
     if withBubble.name == "Bubble" and  ( self.colorName == "Special" or withBubble.colorName == self.colorName) then
         if withBubble.ready then
-            self.vessel:AddAmmo( withBubble.colorName )
+            if self.vessel then
+                self.vessel:AddAmmo( withBubble.colorName )
+            end
             withBubble:OnTarget()
         end
         -- self.vessel.ammoPerColor[  withBubble.colorName ] = self.vessel.ammoPerColor[  withBubble.colorName ] + 1
