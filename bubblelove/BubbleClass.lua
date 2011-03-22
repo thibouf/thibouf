@@ -89,7 +89,8 @@ function BubbleClass:init( x, y, color, mass )
     self.destroyingDuration = 0.1
 	self.creatingDuration = 0.05
     self.destroyTime = love.timer.getTime( )
-  self.scale = 1
+    self.maxCriticTime = 0.5
+    self.scale = 1
     return b
 end
 
@@ -122,21 +123,8 @@ end
 
 
 function BubbleClass:Update(dt)
---[[    if not self.ready then
-        if self.collideSomething then
-            self:Destroy() 
-        else
-            if self.frameWithoutColliding == 0 then
-                 self.shape:setSensor( false )
-                  self.frameWithoutColliding  = self.frameWithoutColliding + 1 
-            elseif self.frameWithoutColliding >= 1 then
-                self.ready = true
-            else
-               self.frameWithoutColliding  = self.frameWithoutColliding + 1 
-            end
-        end
-    end
-]]
+
+    --Check wether ready or not. A not ready bubble taht collide somthing is destroyed
 	if not self.ready and not  self.destroyed then
 	 	self.shape:setSensor( false )
 		if self.collideSomething then
@@ -147,23 +135,45 @@ function BubbleClass:Update(dt)
 			end
 		end
 	end
+    
+    -- Check if destroying state ended
 	local dt = love.timer.getTime( ) - self.destroyTime
     if  self.destroyed and (love.timer.getTime( ) - self.destroyTime) > self.destroyingDuration then
         self.realDestroyed = true
     end
     
+    -- Scale is 1 in normale state, but change at creating/destorying times
     self.scale = 1
-
 	if not self.ready then
 	  	self.scale =  ( love.timer.getMicroTime( ) - self.spawnTime ) / self.creatingDuration
     end
-
     if self.destroyed and not self.realDestroyed then 
         self.scale = self.scale * ( ( love.timer.getTime( ) - self.destroyTime ) / self.destroyingDuration )
         deb = "scle" .. self.scale .. "dt" .. love.timer.getTime( ) - self.destroyTime  .. "dura" .. self.destroyingDuration
-        
         -- debug.debug()
 	end
+    
+    -- Destory too long joints
+    for i, j in pairs( self.joints ) do
+        x1, y1, x2, y2 = j.j:getAnchors()
+        local sqrlen = (x2-x1) ^2 + (y2-y1) ^2
+        if sqrlen > ( self.shape:getRadius() * 2  ) ^ 2  then
+            if not j.critic then
+                j.critic = true
+                j.criticTime = love.timer.getTime( )
+            elseif love.timer.getTime( ) - self.maxCriticTime > j.criticTime then
+                --Destroy join
+                j.j:destroy()
+                self.joints[ i ] = nil
+                self.jointBubbles[ i ].jointBubbles[ self.id ] = nil 
+                self.jointBubbles[ i ] = nil
+            end
+        else
+            j.critic = false
+        end
+    end
+
+    
     
 end
 
@@ -188,7 +198,7 @@ function BubbleClass:Draw()
     love.graphics.setColor( self.color.rgba ) 
 	if DEBUG then
 		-- love.graphics.print( self:GetNbLinks(),  self.body:getX(), self.body:getY() )
-        love.graphics.print(   ( love.timer.getTime( ) - self.destroyTime )  / self.destroyingDuration,  self.body:getX(), self.body:getY() + 10 )
+        -- love.graphics.print(   ( love.timer.getTime( ) - self.destroyTime )  / self.destroyingDuration,  self.body:getX(), self.body:getY() + 10 )
 	end
     love.graphics.setLineStipple( 0xFFFF, 1 )
     love.graphics.circle("line", self.body:getX(), self.body:getY(), self.shape:getRadius() * self.scale, 20)
@@ -198,21 +208,31 @@ function BubbleClass:Draw()
     if self.body:getMass() == 0 then
         love.graphics.circle("line", self.body:getX(), self.body:getY(), self.shape:getRadius() -2, 5)
     end
- 	
-    
+ 	local critic = false
+    DEBUG = true
     if DRAW_JOINTS and self.joints then  
         for _, j in pairs( self.joints ) do
             love.graphics.setLineStipple( 0xFFFF, 1 )
-            x1, y1, x2, y2 = j:getAnchors()
-          local sqrlen = (x2-x1) ^2 + (y2-y1) ^2
-            if sqrlen > ( self.shape:getRadius() * 2 + 2 ) ^ 2  then
+            x1, y1, x2, y2 = j.j:getAnchors()
+            if j.critic  then
                 love.graphics.setColor(255, 0,0)
+                critic = true
+   
             else
-                love.graphics.setColor(50, 50, 50)
+                love.graphics.setColor(50, 50, 50,20)
             end
-            
-          
-           love.graphics.line( x1, y1, x2, y2 )
+            love.graphics.line( x1, y1, x2, y2 )
+           
+             if DEBUG and j.critic then
+                love.graphics.push()
+                love.graphics.setColor(255, 250, 250)
+                love.graphics.print( math.ceil( self.maxCriticTime - ( love.timer.getTime( ) - j.criticTime ) ),  x2, y2 )
+                -- local f =  j.j:getReactionForce( )
+                -- if math.abs( f ) > 1000 then
+                    -- love.graphics.print(math.ceil(f),  x2, y2 )
+                -- end
+                love.graphics.pop()
+             end
         end
    end
 end
@@ -289,20 +309,28 @@ function BubbleClass:Join( withBubble, createJoin )
         joint:setDamping( 1 )
         joint:setLength( self.shape:getRadius() + withBubble.shape:getRadius() - 1  )
         withBubble:Join( self, false )
-        self.joints[ withBubble.id ] = joint
+        self.joints[ withBubble.id ] = 
+        { 
+            j = joint , 
+            critic = false,
+            criticTime = nil,
+        }
         nbLink = nbLink + 1
     end
     self.jointBubbles[ withBubble.id ] =  withBubble
 
-	
-    self:StartCheckDestroy()
+	if not DONNOTDESTROY then
+        if withBubble.colorName == self.colorName then
+            self:StartCheckDestroy()
+        end
+    end
 
 end
 
 
 function BubbleClass:RemoveLinkWith( bubbleId )
     if self.joints[ bubbleId ] then
-        self.joints[ bubbleId ]:destroy()
+        self.joints[ bubbleId ].j:destroy()
         self.joints[ bubbleId ] = nil
     end
 

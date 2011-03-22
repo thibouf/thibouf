@@ -8,7 +8,13 @@ Tower.Steps=
     [ 1 ] = 
     { 
         intervale = 1,
-        duration = 1,
+        duration = 2,
+        nextStep = 2,
+    },
+    [ 2 ] = 
+    { 
+        intervale = 1,
+        duration = 100,
         nextStep = 1,
     },
     -- [ 1 ] = 
@@ -38,15 +44,20 @@ Tower.Steps=
     
 }
 
-function Tower:init( x , y, target )
+function Tower:init( x , y, target, force )
     self.x = x
     self.y = y
+    self.force = force
     self.target = target
     self.lastFireTime = love.timer.getTime( )
-    self.stepId = 1;
-    self.step = self.Steps[ self.stepId ]
-    self.step.endTime = love.timer.getTime( ) + self.step.duration
+    self:SetStepsDef(  self.Steps, 1 )
     self.bubbleColor = "Blue"
+end
+
+function Tower:SetStepsDef( stepsDef, currentStepId )
+    self.Steps = stepsDef 
+    self.step = self.Steps[ currentStepId ]
+    self.step.endTime = love.timer.getTime( ) + self.step.duration
 end
 
 function Tower:Draw()
@@ -88,8 +99,9 @@ function Tower:Fire()
 
     self.bubbleColor = BubbleClass.static.NextColor( self.bubbleColor )
     
-    local speed = 600
-    b.body:setLinearVelocity(  x2 * speed,  y2 * speed)
+
+    -- b.body:setLinearVelocity(  x2 * speed,  y2 * speed)
+    b.body:applyImpulse(  x2 * self.force,  y2 * self.force ,b.body:getX()   , b.body:getY())
     table.insert( objects,b )
     --b.shape:setSensor( true )
 end

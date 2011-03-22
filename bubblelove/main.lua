@@ -52,8 +52,10 @@ end
 
 function InitLevel( name ) 
     objects = {}
-
-	local level  = require( "levels/" .. name )
+    DONNOTDESTROY = true
+    local fullname = "levels/" .. name
+    package.loaded[fullname] = nil
+	local level  = require( fullname )
 	for Id, att in pairs( level ) do
 		if att.T == "Wall" then
 			table.insert( objects, WallClass.new( att.x, att.y,  att.w, att.h ) )
@@ -68,7 +70,8 @@ function InitLevel( name )
 			table.insert( objects, V )
 
 		elseif att.T == "Tower" then
-		 	T = Tower:new(  att.x,  att.y , objects[ att.target ]  )
+		 	T = Tower:new(  att.x,  att.y , objects[ att.target ], att.force  )
+            T:SetStepsDef( att.steps, 1 )
 			table.insert( objects, T )
         elseif att.T == "Target" then
             T = Target:new(  att.x,  att.y ,   att.w, att.h, att.color )
@@ -162,6 +165,9 @@ function love.update(dt)
         end
   end       
     
+    if DONNOTDESTROY then
+            DONNOTDESTROY = false
+    end
 end
 
 function love.mousepressed( x, y, button )

@@ -135,6 +135,15 @@ function Vessel:NextColor( )
     if  self.ammoPerColor[ self.color ] == 0 then
         self:NextColor( )
     end
+    
+    -- local nextColor
+    -- local found = false
+    -- for c, a in pairs( self.ammoPerColor ) do
+        -- if c == nextColor then
+        
+        -- end
+    -- end
+    
 end
 
 function Vessel:Fire()
@@ -148,20 +157,12 @@ function Vessel:Fire()
     local y = my - self.body:getY()
          
     local x2, y2 = Normalize( x, y )
-    -- local b =   BubbleClass:new( self.body:getX() + x2 * ( self.shape:getRadius() + 11 )   , self.body:getY() +  y2 * ( self.shape:getRadius() + 11 )  , self.colorName )
-   -- local b =   BubbleClass.new( self.body:getX()   , self.body:getY()   , "Green" )
+
     local f = 40
-   -- b.body:setLinearVelocity( sx + x2 * speed, sy + y2 * speed)
-   
-    --Release bubble
-    -- self.bubble.body:setLinearVelocity(  x2 * speed,  y2 * speed)
+  
     self.bubble.body:applyImpulse(  x2 * f,  y2 * f,self.body:getX()   , self.body:getY())
     -- self.bubble:RemoveAllLinks()
     self:ReleaseBubble()
-    
-    
-    --b.shape:setSensor( true )
-  
     self.creationTime = love.timer.getTime( )
 end
 
@@ -171,8 +172,6 @@ function Vessel:Update(dt)
     end
     if self.bubble then
         self.bubble:Update(dt)
-    
-        -- self.bubbleJoint:setTarget(self.bubble.body:getX(), self.bubble.body:getY() )
     end
    
     -- self.super:Update()
@@ -183,15 +182,9 @@ function Vessel:Update(dt)
         self.creationTime = love.timer.getTime( )
     end
     
-    -- local livingDuration = love.timer.getTime( ) - self.creationTime 
-    -- if not self.destroyed and livingDuration < self.destroyingDuration then
-        -- self.scale = livingDuration / self.destroyingDuration
-    -- end
-    -- if self.bubble then
-        -- self.bubble.body:applyForce(self.engineForce.x, self.engineForce.y)
-    -- else
-        self.body:applyForce(self.engineForce.x, self.engineForce.y)
-    -- end
+
+    self.body:applyForce(self.engineForce.x, self.engineForce.y)
+
     self.particleSystem:setPosition( self.body:getX(), self.body:getY() )
     if self.engineForce.x == 0 and self.engineForce.y == 0 then
         self.particleSystem:pause()
@@ -251,13 +244,10 @@ function Vessel:Draw()
     love.graphics.setLineStipple( 0x0F0F, 1 )
 
     
-    --love.graphics.line( V.body:getX(),V.body:getY(),x1, y1)
     love.graphics.line( V.body:getX(),V.body:getY(),  V.body:getX() + xn *  self.Radius * 10,
                         V.body:getY() + yn *  self.Radius * 10)
     love.graphics.polygon( 'fill', x1,y1, x2,y2 ,x3,y3)
     
-
-
     love.graphics.setColor( 255,255,255,255 ) 
 	love.graphics.print( self.ammoPerColor[ self.color ],  self.body:getX() - 5, self.body:getY() - 5,0, 0.8,0.8 )
 
