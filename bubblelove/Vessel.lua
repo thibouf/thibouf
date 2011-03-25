@@ -3,7 +3,7 @@ require( "Math" )
 
 Vessel = class( "Vessel" )
 
-function Vessel:init( x, y, color )
+function Vessel:init( x, y, colorId )
     self.Radius = 10
     -- self.Mass = 50
         self.Mass = 0
@@ -24,7 +24,8 @@ function Vessel:init( x, y, color )
     
     self.x = w
     self.y = y
-    self.color = color
+    self:SetColor( colorId )
+
 
 
     self.image = love.graphics.newImage( "test.png" )
@@ -47,8 +48,8 @@ function Vessel:init( x, y, color )
     
     self.ammoPerColor = {}
     self.creationTime = love.timer.getTime( )
-    for cName, c in pairs( BubbleColors ) do
-         self.ammoPerColor[ cName ] = 10
+    for cId, c in pairs( BubbleClass.static.BubbleColors ) do
+         self.ammoPerColor[ cId ] = 10
     end
     
     self:CreateBubble()
@@ -63,7 +64,7 @@ function Vessel:onBubbleDestroyed( wasReady )
  
 
     if not wasReady then
-         self:AddAmmo( self.bubble.colorName )
+         self:AddAmmo( self.bubble.colorId )
      else
      table.insert( objects, self.bubble )
     end
@@ -88,62 +89,81 @@ function Vessel:ReleaseBubble()
 end
 
 function Vessel:CreateBubble()
-    if  self.ammoPerColor[ self.color ] == 0 then
-        self:SetColor( "Special" )
+    if  self.ammoPerColor[ self.colorId ] == 0 then
+        cId, color = BubbleClass.static.GetColorByName( "Special" )
+        self:SetColor( cId )
+        return
     end
     
-    if self.color == "Special" then
+    if self.color.name == "Special" then
         return
     end
 
-    if self.bubble or self.ammoPerColor[ self.color ] <= 0 then
+    if self.bubble or self.ammoPerColor[ self.colorId ] <= 0 then
         return
     else
        self:ConsumeAmmo()
     end
     
-    self.bubble = BubbleClass:new(  self.body:getX() , self.body:getY()  , self.color )
-    -- self.bubble:SetMass( self.Mass )
+    self.bubble = BubbleClass:new(  self.body:getX() , self.body:getY()  , self.colorId )
     self.bubble:SetMass( 2 )
-    -- self.bubbleJoint = love.physics.newDistanceJoint( self.body, self.bubble.body, self.body:getX() , self.body:getY(), self.bubble.body:getX(), self.bubble.body:getY() )
-   self.bubbleJoint = love.physics.newRevoluteJoint(  self.body, self.bubble.body, self.body:getY(), self.bubble.body:getX() )
-   self.bubbleJoint:setCollideConnected( true )
-    -- self.bubbleJoint:setLength( 0 )
-    -- self.bubbleJoint = love.physics.newMouseJoint( self.body, self.bubble.body:getX(), self.bubble.body:getY() )
+    self.bubbleJoint = love.physics.newRevoluteJoint(  self.body, self.bubble.body, self.body:getY(), self.bubble.body:getX() )
+    self.bubbleJoint:setCollideConnected( true )
+
     self.bubble.onDestroyCallback = { f = self.onBubbleDestroyed, p = self }
-    -- self:SetMass( self.Mass )
 end
 
 function Vessel:SetColor( color )
-    self.color = color   
-   
+    self.colorId = color   
+    self.color = BubbleClass.static.BubbleColors[ color ]
+    assert( self.color, "SetColor with unknow color " .. color )
     if self.bubble then
-        if self.color == "Special" then
-            self.bubble:Destroy()
-            -- self:ReleaseBubble()
+        if self.color.name == "Special" then
+            local b = self.bubble
+            self:ReleaseBubble()
+            b:Destroy()
+
         else
-            self.bubble:SetColor( self.color )
+            self.bubble:SetColor( self.colorId )
             self.bubble:StartCheckDestroy()
         end
     end
 end
 
-function Vessel:NextColor( )
-    local k, c = BubbleClass.static.NextColor( self.color, false )
-    self:SetColor( k )
-    
-    if  self.ammoPerColor[ self.color ] == 0 then
-        self:NextColor( )
+function Vessel:IncrementColor( increment )
+    local startId = self.colorId
+    local id = startId + increment
+    local newColorId = id
+    local found = false
+    while not found and id ~= startId do
+        if id > table.getn( self.ammoPerColor ) then
+            id = 1
+        end
+        if id < 1 then
+            id = table.getn( self.ammoPerColor )
+        end
+        
+        if  self.ammoPerColor[ id ] ~= 0 and BubbleClass.static.BubbleColors[ id ].name ~= "Special" then
+            newColorId = id
+            found = true
+        end
+        id = id + increment
     end
     
-    -- local nextColor
-    -- local found = false
-    -- for c, a in pairs( self.ammoPerColor ) do
-        -- if c == nextColor then
-        
-        -- end
-    -- end
+    if not found then
+        newColorId = BubbleClass.static.GetColorByName( "Special" )
+    end
     
+    self:SetColor( newColorId )
+
+end
+
+function Vessel:NextColor(  )
+    self:IncrementColor( 1 )   
+end
+
+function Vessel:PrevColor(  )
+    self:IncrementColor( -1 )   
 end
 
 function Vessel:Fire()
@@ -226,7 +246,7 @@ function Vessel:Draw()
     love.graphics.draw(  self.particleSystem )
     
  
-    love.graphics.setColor( BubbleColors[ self.color ].rgba ) 
+    love.graphics.setColor(  BubbleClass.static.BubbleColors[ self.colorId ].rgba ) 
     local x, y = GetMousePosition()
     local xn, yn = Normalize( x - V.body:getX(), y - V.body:getY() )
     local x1 = V.body:getX() + xn *  self.Radius
@@ -249,7 +269,7 @@ function Vessel:Draw()
     love.graphics.polygon( 'fill', x1,y1, x2,y2 ,x3,y3)
     
     love.graphics.setColor( 255,255,255,255 ) 
-	love.graphics.print( self.ammoPerColor[ self.color ],  self.body:getX() - 5, self.body:getY() - 5,0, 0.8,0.8 )
+	love.graphics.print( self.ammoPerColor[ self.colorId ],  self.body:getX() - 5, self.body:getY() - 5,0, 0.8,0.8 )
 
     love.graphics.setColor( 255,255,255,255 ) 
 
@@ -268,13 +288,13 @@ end
  
 function Vessel:ConsumeAmmo()
    if not self.destroyed then
-        self.ammoPerColor[ self.color ] = self.ammoPerColor[ self.color ] - 1
+        self.ammoPerColor[ self.colorId ] = self.ammoPerColor[ self.colorId ] - 1
     end
 end
 
-function Vessel:AddAmmo( colorName )
+function Vessel:AddAmmo( colorId )
    if not self.destroyed then
-        self.ammoPerColor[ colorName ] = self.ammoPerColor[ colorName ] + 1
+        self.ammoPerColor[ colorId ] = self.ammoPerColor[ colorId ] + 1
     end
 end
 

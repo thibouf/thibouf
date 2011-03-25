@@ -12,51 +12,44 @@ BubbleClass = class("BubbleClass")
 BubbleClass:setDefaultVirtual(true)
 
 
-BubbleColors = 
+BubbleClass.BubbleColors = 
 {
-    Red = 
     {
+        name = "Red",
         rgba = { 255,0, 0, 255 },
     },
-    Blue = 
     {
+        name = "Blue",
         rgba  = { 0,0, 255, 255 },
     },
-    Green = 
     {
+        name = "Green",
         rgba  = { 0,255, 0, 255 },
     },
-    Yellow = 
     {
+        name = "Yellow",
         rgba  = { 255,255, 0, 255 },
     },
-    Purple = 
     {
+        name = "Purple",
         rgba  = { 255,0, 255, 255 },
     },
-    Cyan = 
     {
+        name = "Cyan",
         rgba  = { 0,255, 255, 255 },
     },
-    Special = 
     {
+        name = "Special",
         rgba  = { 255,255, 255, 255 },
     },
 }
-
-function BubbleClass.NextColor( color, useSpecial )
-    local col = BubbleColors[ color ]
-    -- debug.debug()
-    local k, c = next( BubbleColors, color )
-    -- debug.debug()
-    if k == nil then
-        k, c = next( BubbleColors )
+function BubbleClass.GetColorByName( name )
+    for cId, color in pairs( BubbleClass.static.BubbleColors ) do
+        if color.name == name then
+            return cId, color
+        end
     end
-    if not useSpecial and k == "Special" then
-      
-         k, c = BubbleClass.static.NextColor( k )
-    end
-    return k, c
+    return nil
 end
 
 
@@ -91,6 +84,7 @@ function BubbleClass:init( x, y, color, mass )
     self.destroyTime = love.timer.getTime( )
     self.maxCriticTime = 0.5
     self.scale = 1
+
     return b
 end
 
@@ -114,9 +108,9 @@ function BubbleClass:SetMass( m )
     self.body:setMass( self.body:getX(), self.body:getY(), m, 0 )
 end
 
-function BubbleClass:SetColor( color )
-    self.colorName = color   
-    self.color = BubbleColors[ color ]
+function BubbleClass:SetColor( colorId )
+    self.colorId = colorId   
+    self.color = BubbleClass.static.BubbleColors[ colorId ]
     -- self:StartCheckDestroy()
 end
 
@@ -148,7 +142,7 @@ function BubbleClass:Update(dt)
 	  	self.scale =  ( love.timer.getMicroTime( ) - self.spawnTime ) / self.creatingDuration
     end
     if self.destroyed and not self.realDestroyed then 
-        self.scale = self.scale * ( ( love.timer.getTime( ) - self.destroyTime ) / self.destroyingDuration )
+        self.scale = self.scale *  ( 1 + ( love.timer.getTime( ) - self.destroyTime ) / self.destroyingDuration )
         deb = "scle" .. self.scale .. "dt" .. love.timer.getTime( ) - self.destroyTime  .. "dura" .. self.destroyingDuration
         -- debug.debug()
 	end
@@ -246,7 +240,7 @@ function BubbleClass:CheckDestroy( currentNbSame, doDestroy )
     alreadyChecked[ self.id ] = true
     
     for _, b in pairs( self.jointBubbles ) do
-        if b.colorName == self.colorName then
+        if b.colorId == self.colorId then
             currentNbSame = b:CheckDestroy( currentNbSame , doDestroy )
         end
     end
@@ -320,7 +314,7 @@ function BubbleClass:Join( withBubble, createJoin )
     self.jointBubbles[ withBubble.id ] =  withBubble
 
 	if not DONNOTDESTROY then
-        if withBubble.colorName == self.colorName then
+        if withBubble.colorId == self.colorId then
             self:StartCheckDestroy()
         end
     end

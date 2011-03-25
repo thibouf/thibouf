@@ -94,13 +94,13 @@ local Level =
 	{
 		T = "Bubble",
 		x = X / 2 + 10 ,
-		y = 50,
+		y = 65,
 		color = "Red",
 	},	 
     {
 		T = "Bubble",
 		x = X / 2  - 10 ,
-		y = 50,
+		y = 65,
 		color = "Red",
 	},	 
     {

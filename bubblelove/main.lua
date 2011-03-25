@@ -56,25 +56,26 @@ function InitLevel( name )
     local fullname = "levels/" .. name
     package.loaded[fullname] = nil
 	local level  = require( fullname )
+    local T
 	for Id, att in pairs( level ) do
 		if att.T == "Wall" then
 			table.insert( objects, WallClass.new( att.x, att.y,  att.w, att.h ) )
 		elseif att.T == "Bubble" then
-			local B = BubbleClass:new( att.x,  att.y , att.color, att.mass )
+			local B = BubbleClass:new( att.x,  att.y , BubbleClass.static.GetColorByName( att.color ) , att.mass )
 			B.ready = true
             B.shape:setSensor( false )
 			table.insert( objects, B )
 	
 		elseif att.T == "Vessel" then
-		 	V = Vessel:new(  att.x,  att.y , att.color  )
+		 	V = Vessel:new(  att.x,  att.y , BubbleClass.static.GetColorByName( att.color )  )
 			table.insert( objects, V )
 
 		elseif att.T == "Tower" then
-		 	T = Tower:new(  att.x,  att.y , objects[ att.target ], att.force  )
+		 	local T = Tower:new(  att.x,  att.y , objects[ att.target ], att.force  )
             T:SetStepsDef( att.steps, 1 )
 			table.insert( objects, T )
         elseif att.T == "Target" then
-            T = Target:new(  att.x,  att.y ,   att.w, att.h, att.color )
+            local T = Target:new(  att.x,  att.y ,   att.w, att.h, BubbleClass.static.GetColorByName( att.color ), V )
             table.insert( objects, T )
 		end
 	end
@@ -86,42 +87,6 @@ function InitWorld()
     world:setGravity(0, 50) -- the x component of the gravity will be 0, and the y component of the gravity will be 700
     world:setMeter(64) --the height of a meter in this world will be 64px
  	InitLevel( "lvl1" ) 
-	if 1 == 1 then	
-		return
-	end
-    objects = {}
-    
-    V = Vessel:new( 650/2, 650/2 + 50 , "Red" )
-        
-    table.insert( objects, Target:new( 650/2, 650 - 50, 650, 50, "Special", V ) )
-    -- table.insert( objects, Target:new( 650/2, 650 - 60, 650, 10, "Blue" ) )  
-    -- table.insert( objects, Target:new( 650/2, 650 - 70, 650, 10, "Yellow" ) )  
-    -- table.insert( objects, Target:new( 650/2, 650 - 80, 650, 10, "Cyan" ) )  
-    -- table.insert( objects, Target:new( 650/2, 650 - 90, 650, 10, "Purple" ) )  
-    -- table.insert( objects, Target:new( 650/2, 650 - 100, 650, 10, "Green" ) )  
-    
-
-    table.insert( objects, WallClass.new( 650/2, 625, 650, 50 ) )
-    table.insert( objects, WallClass.new( 650/2, 25, 650, 50 ) )
-   
-    table.insert( objects, WallClass.new( 25 , 650/2, 50, 650 ) )
-    table.insert( objects, WallClass.new( 625 , 650/2, 50, 650 ) )
-    table.insert( objects, WallClass.new( 650/2 , 650 - 50, 50, 100 ) )
-
-    
-    table.insert( objects, V )
-    V.protected = true
-
-  
-    J = BubbleClass:new( 650/2,  100 , "Special" )
-    J.body:setMass( 50/2, 650/2 + 50, 0, 0 )
-    table.insert( objects, J )
- 
-  	 T = Tower:new(  70,  300 , J )
-    table.insert( objects, T )
-  
-    T2 = Tower:new(  650-70,  300 , J )
-    table.insert( objects, T2 )
 end
 ----------------------------------------------------------------------------------------------------
 function love.load()
@@ -179,8 +144,10 @@ function love.mousepressed( x, y, button )
     elseif button == "wd" then
         V:NextColor( )
     elseif button == "wu" then
-        V:SetColor( "Special" )
-   end
+        V:PrevColor( )
+    elseif button == "m" then
+        V:SetColor( BubbleClass.static.GetColorByName("Special" ) )
+    end
 end
 
 
@@ -196,7 +163,7 @@ function LoadGame()
 
   -- for _, o in pairs( savedGame ) do
 	-- if o.name == "Bubble" then
-	 	-- local B = BubbleClass:new( o.body:getX(), o.body:getY(),  o.colorName )
+	 	-- local B = BubbleClass:new( o.body:getX(), o.body:getY(),  o.colorId )
 		-- B.ready = true
 		-- B:SetMass( o.body:getMass() )
  		-- B.shape:setSensor( false )

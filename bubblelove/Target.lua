@@ -10,8 +10,8 @@ function Target:init( x, y, width, height, color, vessel )
     self.shape = love.physics.newRectangleShape( self.body , 0, 0, width, height, 0 )
     self.shape:setSensor( true )
     self.shape:setData( self )
-    self.colorName = color
-    self.color = BubbleColors[ color ]
+    self.colorId = color
+    self.color = BubbleClass.static.BubbleColors[ color ]
     self.vessel = vessel
 end
 
@@ -28,13 +28,13 @@ end
 
 function Target:NotifyCollide( withBubble )
     
-    if withBubble.name == "Bubble" and  ( self.colorName == "Special" or withBubble.colorName == self.colorName) then
+    if withBubble.name == "Bubble" and  ( self.color.name == "Special" or withBubble.colorId == self.colorId) then
         if withBubble.ready then
             if self.vessel then
-                self.vessel:AddAmmo( withBubble.colorName )
+                self.vessel:AddAmmo( withBubble.colorId )
             end
             withBubble:OnTarget()
         end
-        -- self.vessel.ammoPerColor[  withBubble.colorName ] = self.vessel.ammoPerColor[  withBubble.colorName ] + 1
+        -- self.vessel.ammoPerColor[  withBubble.colorId ] = self.vessel.ammoPerColor[  withBubble.colorId ] + 1
     end
 end
