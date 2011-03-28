@@ -50,6 +50,39 @@ function result(a, b, coll)
 end
 
 
+function GenerateLevel()
+    objects = {}
+    DONNOTDESTROY = true
+    V = Vessel:new( 50,  200 , BubbleClass.static.GetColorByName(  "Red" )  )
+    V:SetMass( 50 )
+    table.insert( objects, V )
+    
+   
+    for x= 1, 20, 1  do
+
+        for y=1, 10, 1 do
+            if y == 1 then
+                color = BubbleClass.static.GetColorByName( "Special" )
+                mass = 0
+            else
+                color = math.random( 6 ) --% table.getn( BubbleClass.static.BubbleColors )
+                mass = nil
+            end
+
+            if (y % 2 == 0 ) then
+                padding = BubbleClass.static.Radius
+            else
+                padding = 0
+            end
+            local B = BubbleClass:new( x * ( BubbleClass.static.Radius * 2 - 1 )+ padding,  y * ( BubbleClass.static.Radius * 1.7)  , color , mass )
+            B.ready = true
+            B.shape:setSensor( false )
+            table.insert( objects, B )
+        end
+    end
+
+end
+
 function InitLevel( name ) 
     objects = {}
     DONNOTDESTROY = true
@@ -86,7 +119,8 @@ function InitWorld()
     world:setCallbacks(add, persist, rem, result)
     world:setGravity(0, 50) -- the x component of the gravity will be 0, and the y component of the gravity will be 700
     world:setMeter(64) --the height of a meter in this world will be 64px
- 	InitLevel( "lvl1" ) 
+ 	--InitLevel( "lvl1" ) 
+    GenerateLevel()
 end
 ----------------------------------------------------------------------------------------------------
 function love.load()

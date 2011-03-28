@@ -111,6 +111,7 @@ function Vessel:CreateBubble()
     self.bubbleJoint:setCollideConnected( true )
 
     self.bubble.onDestroyCallback = { f = self.onBubbleDestroyed, p = self }
+
 end
 
 function Vessel:SetColor( color )

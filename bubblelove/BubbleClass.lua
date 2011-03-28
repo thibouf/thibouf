@@ -65,7 +65,7 @@ function BubbleClass:init( x, y, color, mass )
     self.body = love.physics.newBody( world, x, y , self.Mass, 0 )
     self.body:setAngularVelocity( 0 )
     self.body:setLinearDamping( 0.2 ) 
-
+    self.body:setBullet( true )
     self:CreateShape() 
     self.name = "Bubble"
 
@@ -96,7 +96,7 @@ function BubbleClass:CreateShape( )
     self.shape:setFriction( 0 )
     --world:update(0)
     self.shape:setMask(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16)
-    world:update(0)
+    -- world:update(0)
     self.shape:setMask( 16 )
     self.shape:setCategory( 1 )
     -- world:update(0)
