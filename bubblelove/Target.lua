@@ -2,11 +2,11 @@ require( "YaciCode" )
 require( "BubbleClass" )
 Target = class("Target")
 
-function Target:init( x, y, width, height, color, vessel )
+function Target:init( level, x, y, width, height, color, vessel )
     self.name = "Target"
     self.width = width
     self.height = height
-    self.body = love.physics.newBody(world, x, y, 0, 0)
+    self.body = love.physics.newBody( level.world, x, y, 0, 0)
     self.shape = love.physics.newRectangleShape( self.body , 0, 0, width, height, 0 )
     self.shape:setSensor( true )
     self.shape:setData( self )

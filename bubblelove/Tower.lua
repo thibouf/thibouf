@@ -44,7 +44,7 @@ Tower.Steps=
     
 }
 
-function Tower:init( x , y, target, force )
+function Tower:init( level, x , y, target, force )
     self.x = x
     self.y = y
     self.force = force

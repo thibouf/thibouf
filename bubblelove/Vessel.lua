@@ -3,13 +3,18 @@ require( "Math" )
 
 Vessel = class( "Vessel" )
 
-function Vessel:init( x, y, colorId )
+function Vessel:init( level, x, y, colorId, mass )
     self.Radius = 10
-    -- self.Mass = 50
+    if mass == nil then
+        self.Mass = 50
+    else
         self.Mass = 0
+    end
+       
     self.name = "Vessel"
+    self.level = level
     -- self.super:init( x, y, color )
-    self.body = love.physics.newBody( world, x, y , self.Mass, 0 )
+    self.body = love.physics.newBody( level.world, x, y , self.Mass, 0 )
     self.body:setLinearDamping( 0.2 ) 
     self.shape = love.physics.newCircleShape(self.body, 0, 0, self.Radius + 1 )
     self.shape:setData( self )
@@ -49,8 +54,8 @@ function Vessel:init( x, y, colorId )
     self.ammoPerColor = {}
     self.creationTime = love.timer.getTime( )
     for cId, c in pairs( BubbleClass.static.BubbleColors ) do
-         self.ammoPerColor[ cId ] = 10
-    end
+         self.ammoPerColor[ cId ] = 50
+     end
     
     self:CreateBubble()
     
@@ -64,9 +69,9 @@ function Vessel:onBubbleDestroyed( wasReady )
  
 
     if not wasReady then
-         self:AddAmmo( self.bubble.colorId )
-     else
-     table.insert( objects, self.bubble )
+        self:AddAmmo( self.bubble.colorId )
+    else
+        table.insert( self.level.objects, self.bubble )
     end
     self.bubbleJoint:destroy()
     -- self.bubbleJoint = nil
@@ -77,7 +82,7 @@ function Vessel:ReleaseBubble()
     -- self.bubble:SetMass( self.bubble.Mass )
     -- self:SetMass( self.Mass )
     if self.bubble then
-		table.insert( objects, self.bubble )
+		table.insert( self.level.objects, self.bubble )
 		self.bubble:SetMass( self.bubble.Mass )
 		self.bubbleJoint:destroy()
 		self.bubbleJoint = nil
@@ -105,7 +110,7 @@ function Vessel:CreateBubble()
        self:ConsumeAmmo()
     end
     
-    self.bubble = BubbleClass:new(  self.body:getX() , self.body:getY()  , self.colorId )
+    self.bubble = BubbleClass:new( self.level, self.body:getX() , self.body:getY()  , self.colorId )
     self.bubble:SetMass( 2 )
     self.bubbleJoint = love.physics.newRevoluteJoint(  self.body, self.bubble.body, self.body:getY(), self.bubble.body:getX() )
     self.bubbleJoint:setCollideConnected( true )

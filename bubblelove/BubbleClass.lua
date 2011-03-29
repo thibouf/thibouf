@@ -54,15 +54,14 @@ end
 
 
 BubbleClass.Radius = 10
-BubbleClass.Mass = 50
-
-function BubbleClass:init( x, y, color, mass )
+BubbleClass.Mass = 2000
+function BubbleClass:init( level, x, y, color, mass )
     self.id = bubbleId
     bubbleId = bubbleId + 1
 	if mass then
 		self.Mass = mass
 	end
-    self.body = love.physics.newBody( world, x, y , self.Mass, 0 )
+    self.body = love.physics.newBody( level.world, x, y , self.Mass, 0 )
     self.body:setAngularVelocity( 0 )
     self.body:setLinearDamping( 0.2 ) 
     self.body:setBullet( true )
@@ -82,7 +81,7 @@ function BubbleClass:init( x, y, color, mass )
     self.destroyingDuration = 0.1
 	self.creatingDuration = 0.05
     self.destroyTime = love.timer.getTime( )
-    self.maxCriticTime = 0.5
+    self.maxCriticTime = 0.2
     self.scale = 1
 
     return b
@@ -300,7 +299,8 @@ function BubbleClass:Join( withBubble, createJoin )
         local joint = love.physics.newDistanceJoint( self.body, withBubble.body, self.body:getX() , self.body:getY(), withBubble.body:getX(), withBubble.body:getY() )
         joint:setCollideConnected( true )
         -- joint:setFrequency( 60 )
-        joint:setDamping( 1 )
+        -- joint:setDamping( 1 )
+
         joint:setLength( self.shape:getRadius() + withBubble.shape:getRadius() - 1  )
         withBubble:Join( self, false )
         self.joints[ withBubble.id ] = 
@@ -358,8 +358,8 @@ BubbleClass:virtual( "Destroy" )
 
 function BubbleClass:RealDestroy()
     if self.destroyed then
-        -- self.shape:destroy()
-        -- self.body:destroy()
+        self.shape:destroy()
+        self.body:destroy()
     end
 end
 
