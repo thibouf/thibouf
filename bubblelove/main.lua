@@ -1,4 +1,5 @@
 require( "Level" )
+require( "Menu" )
 
 require( "Math" )
 
@@ -11,8 +12,8 @@ function InitWorld()
 end
 ----------------------------------------------------------------------------------------------------
 function love.load()
-	InitWorld()
-  
+	-- InitWorld()
+    GotoState( "Menu" )
   --initial graphics setup
   love.graphics.setBackgroundColor(0, 0, 50) 
   love.graphics.setMode(1024, 768, false, true, 0) --set the window dimensions to 650 by 650
@@ -22,11 +23,11 @@ end
 function love.update(dt)
     text = love.timer.getFPS() .. " - "
   
-    level:Update( dt )
+    state:Update( dt )
 end
 
 function love.mousepressed( x, y, button )
-  level:MousePressed(  x, y, button )
+  state:MousePressed(  x, y, button )
 end
 
 
@@ -48,9 +49,11 @@ function love.keypressed(key, u)
       debug.debug()
    	-- elseif key == "s" then
 		-- SaveGame()
-	elseif key == "l" then
-		LoadGame()
+
 	end
+    
+    state:KeyPressed( key, u )
+    
 end
 
 
@@ -60,10 +63,27 @@ function GetMousePosition()
 end
 
 function love.draw()
-    level:Draw()
+    state:Draw()
     love.graphics.setColor( 0,0,0,255 ) 
-  -- love.graphics.print(text,0,12)
-  
- 
-  
+  -- love.graphics.print(text,0,12) 
+end
+
+StateList = 
+{
+    Menu = 
+    { 
+        init = function( params ) return Menu:new() end,
+    },
+    Game = 
+    {   
+        init = function( params ) return Level:new( params[1] ) end,
+    }
+}
+
+function GotoState( stateName, params )
+    print( stateName.. tostring( state ) )
+    local st = StateList[ stateName ]
+    local stateInit = st.init
+    state = stateInit(params) 
+
 end

@@ -6,7 +6,7 @@ Vessel = class( "Vessel" )
 function Vessel:init( level, x, y, colorId, mass )
     self.Radius = 10
     if mass == nil then
-        self.Mass = 50
+        self.Mass = BubbleClass.static.Mass 
     else
         self.Mass = 0
     end
@@ -83,7 +83,8 @@ function Vessel:ReleaseBubble()
     -- self:SetMass( self.Mass )
     if self.bubble then
 		table.insert( self.level.objects, self.bubble )
-		self.bubble:SetMass( self.bubble.Mass )
+        self.bubble:SetMass( self.bubble.Mass )
+        -- self:SetMass( self.bubble.Mass ) 
 		self.bubbleJoint:destroy()
 		self.bubbleJoint = nil
 		self.bubble.onDestroyCallback = nil
@@ -112,6 +113,7 @@ function Vessel:CreateBubble()
     
     self.bubble = BubbleClass:new( self.level, self.body:getX() , self.body:getY()  , self.colorId )
     self.bubble:SetMass( 2 )
+    -- self:SetMass( 2 ) 
     self.bubbleJoint = love.physics.newRevoluteJoint(  self.body, self.bubble.body, self.body:getY(), self.bubble.body:getX() )
     self.bubbleJoint:setCollideConnected( true )
 
@@ -196,9 +198,7 @@ function Vessel:Update(dt)
     if not self.bubble then
         self:CreateBubble()
     end
-    if self.bubble then
-        self.bubble:Update(dt)
-    end
+
    
     -- self.super:Update()
     if self.realDestroyed == true then
@@ -208,9 +208,16 @@ function Vessel:Update(dt)
         self.creationTime = love.timer.getTime( )
     end
     
-
-    self.body:applyForce(self.engineForce.x, self.engineForce.y)
-
+    if self.bubble then
+        self.bubble.body:applyForce(self.engineForce.x, self.engineForce.y)
+    else
+        self.body:applyForce(self.engineForce.x, self.engineForce.y)
+    end
+    
+    if self.bubble then
+        self.bubble:Update(dt)
+    end
+    
     self.particleSystem:setPosition( self.body:getX(), self.body:getY() )
     if self.engineForce.x == 0 and self.engineForce.y == 0 then
         self.particleSystem:pause()

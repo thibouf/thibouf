@@ -10,6 +10,12 @@ require( "YaciCode" )
 Level = class("Level")
 
 function Level:init( name )
+    self.levelName = name
+    self:Load()
+end
+
+function Level:Load()
+    local name = self.levelName
     self.objects = {}
     DONNOTDESTROY = true
     
@@ -49,6 +55,7 @@ function Level:init( name )
 		end
 	end
 end
+
 
 function Level:GenerateRandomZone( startX, startY, nx, ny )
     
@@ -172,6 +179,14 @@ function Level:MousePressed( x, y, button )
         V:PrevColor( )
     elseif button == "m" then
         V:SetColor( BubbleClass.static.GetColorByName("Special" ) )
+    end
+end
+
+function Level:KeyPressed( key, u )
+	if key == "l" then
+        self:Load( )
+    elseif key == "escape" then
+         GotoState( "Menu" )
     end
 end
 

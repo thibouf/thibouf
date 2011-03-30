@@ -7,16 +7,24 @@ local Level =
 	{
 		T = "Vessel",
 		x = X / 2,
-		y = Y - 100,
+		y = Y - 150,
 		color = "Special",
 	},
     {
 		T = "Target",
 		x = X / 2,
-		y = Y-50,
+		y = Y-25,
         h = 50,
 		w = X,
         color = "Special"
+	}, 
+    {
+		T = "Target",
+		x = X / 2,
+		y = Y-100,
+        h = 25,
+		w = X,
+        color = "Red"
 	}, 
 	{
 		T = "Wall",
@@ -50,7 +58,7 @@ local Level =
 		T = "Wall",
 		x = X/2,
 		y = Y,
-		h = 200,
+		h = 300,
 		w = 50,
 	},
 	{

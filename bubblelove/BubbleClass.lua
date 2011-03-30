@@ -54,7 +54,7 @@ end
 
 
 BubbleClass.Radius = 10
-BubbleClass.Mass = 2000
+BubbleClass.Mass = 50
 function BubbleClass:init( level, x, y, color, mass )
     self.id = bubbleId
     bubbleId = bubbleId + 1
@@ -202,8 +202,8 @@ function BubbleClass:Draw()
         love.graphics.circle("line", self.body:getX(), self.body:getY(), self.shape:getRadius() -2, 5)
     end
  	local critic = false
-    DEBUG = true
-    if DRAW_JOINTS and self.joints then  
+    DEBUG = false
+    if DEBUG and DRAW_JOINTS and self.joints then  
         for _, j in pairs( self.joints ) do
             love.graphics.setLineStipple( 0xFFFF, 1 )
             x1, y1, x2, y2 = j.j:getAnchors()
@@ -216,7 +216,7 @@ function BubbleClass:Draw()
             end
             love.graphics.line( x1, y1, x2, y2 )
            
-             if DEBUG and j.critic then
+             if j.critic then
                 love.graphics.push()
                 love.graphics.setColor(255, 250, 250)
                 love.graphics.print( math.ceil( self.maxCriticTime - ( love.timer.getTime( ) - j.criticTime ) ),  x2, y2 )
