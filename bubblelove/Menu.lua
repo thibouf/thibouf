@@ -36,7 +36,7 @@ function Menu:Draw()
         else
             love.graphics.setColor( 255,0,0,255 ) 
         end
-        love.graphics.print( item.text, 10, 10 * i  )
+        love.graphics.print( item.text, 10, 10 * i, 0, 2 ,2  )
     end
 end
 

@@ -59,6 +59,8 @@ function Vessel:init( level, x, y, colorId, mass )
     
     self:CreateBubble()
     
+    self.lastKeyPressedTimes = {}
+    
 end
 
 function Vessel:SetMass( m )
@@ -186,12 +188,31 @@ function Vessel:Fire()
          
     local x2, y2 = Normalize( x, y )
 
-    local f = 40
-  
-    self.bubble.body:applyImpulse(  x2 * f,  y2 * f,self.body:getX()   , self.body:getY())
+
+    -- local f = 40
+    -- self.bubble.body:applyImpulse(  x2 * f,  y2 * f,self.body:getX()   , self.body:getY())
+    local s = 1500
+    self.bubble.body:setLinearVelocity(  x2 * s,  y2 * s)
     -- self.bubble:RemoveAllLinks()
     self:ReleaseBubble()
     self.creationTime = love.timer.getTime( )
+end
+
+function Vessel:GetBodyToApplyForce()
+    if self.bubble then
+        return self.bubble.body
+    else
+        return self.body
+    end
+end
+
+function Vessel:ApplyForce( fx, fy )
+    self:GetBodyToApplyForce():applyForce( fx, fy )
+end
+
+function Vessel:ApplyImpulse( fx, fy )
+    local b = self:GetBodyToApplyForce()
+    b:applyImpulse( fx, fy, b:getX(), b:getY() )
 end
 
 function Vessel:Update(dt)
@@ -199,7 +220,23 @@ function Vessel:Update(dt)
         self:CreateBubble()
     end
 
-   
+    local F = 400
+    self:ResetEngineForce()
+    --here we are going to create some keyboard events
+    if love.keyboard.isDown("right") then --press the right arrow key to push the ball to the right
+        self:AddEngineForce(F, 0)
+    end
+    if love.keyboard.isDown("left") then --press the left arrow key to push the ball to the left
+        self:AddEngineForce(-F, 0)
+    end
+    if love.keyboard.isDown("up") then 
+        self:AddEngineForce( 0, -F)
+    end
+    if love.keyboard.isDown("down") then 
+        self:AddEngineForce( 0, F)
+    end
+
+
     -- self.super:Update()
     if self.realDestroyed == true then
   
@@ -208,11 +245,7 @@ function Vessel:Update(dt)
         self.creationTime = love.timer.getTime( )
     end
     
-    if self.bubble then
-        self.bubble.body:applyForce(self.engineForce.x, self.engineForce.y)
-    else
-        self.body:applyForce(self.engineForce.x, self.engineForce.y)
-    end
+    self:ApplyForce( self.engineForce.x, self.engineForce.y )
     
     if self.bubble then
         self.bubble:Update(dt)
@@ -231,6 +264,46 @@ function Vessel:Update(dt)
        
      
 end
+
+function Vessel:MousePressed( x, y, button )
+    if button == "l" then
+        self:Fire()
+   elseif button == "r" then
+        self:Fire2()
+   
+    elseif button == "wd" then
+        self:NextColor( )
+    elseif button == "wu" then
+        self:PrevColor( )
+    elseif button == "m" then
+        self:SetColor( BubbleClass.static.GetColorByName("Special" ) )
+    end
+end
+
+
+function Vessel:KeyPressed(  key, u )
+    local t = love.timer.getTime( )
+    local i = 200
+    
+    local function CheckImpulse( checkKey, resetKey, ix, iy)
+        if key == checkKey then
+            if self.lastKeyPressedTimes[ key ] and ( t - self.lastKeyPressedTimes[ key ] ) < 0.5 then
+                 self:ApplyImpulse( ix * i, iy * i)
+                 print( "Impulse " .. checkKey )
+            end
+            self.lastKeyPressedTimes[ resetKey ] = 0
+            return true
+        end
+    end
+    
+    CheckImpulse( "left", "right", -1, 0)
+    CheckImpulse( "right","left",  1, 0)
+    CheckImpulse( "up","down", 0, -1)     
+    CheckImpulse( "down","up", 0, 1)
+    
+     self.lastKeyPressedTimes[ key ] = t
+end
+
 
 function Vessel:Fire2()
     -- self.bubble:RemoveAllLinks( )

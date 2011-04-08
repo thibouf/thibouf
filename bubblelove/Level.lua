@@ -134,21 +134,7 @@ end
 function Level:Update( dt )
 
   self.world:update(dt) --this puts the world into motion
-  local F = 400
-	V:ResetEngineForce()
-  --here we are going to create some keyboard events
-  if love.keyboard.isDown("right") then --press the right arrow key to push the ball to the right
-    V:AddEngineForce(F, 0)
-  end
-  if love.keyboard.isDown("left") then --press the left arrow key to push the ball to the left
-    V:AddEngineForce(-F, 0)
-  end
-  if love.keyboard.isDown("up") then 
-     V:AddEngineForce( 0, -F)
-  end
-  if love.keyboard.isDown("down") then 
-     V:AddEngineForce( 0, F)
-  end
+
     
     for k, o in pairs( self.objects ) do
         
@@ -168,21 +154,11 @@ function Level:Update( dt )
 end
 
 function Level:MousePressed( x, y, button )
-   if button == "l" then
-        V:Fire()
-   elseif button == "r" then
-        V:Fire2()
-   
-    elseif button == "wd" then
-        V:NextColor( )
-    elseif button == "wu" then
-        V:PrevColor( )
-    elseif button == "m" then
-        V:SetColor( BubbleClass.static.GetColorByName("Special" ) )
-    end
+   V:MousePressed( x, y, button )
 end
 
 function Level:KeyPressed( key, u )
+    V:KeyPressed(  key, u )
 	if key == "l" then
         self:Load( )
     elseif key == "escape" then
